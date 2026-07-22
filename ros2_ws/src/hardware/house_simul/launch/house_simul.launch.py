@@ -109,9 +109,9 @@ def launch_setup(context, *args, **kwargs):
             'show_rviz': 'true',
             'rviz_config': PathJoinSubstitution([FindPackageShare('mbot_demo'), 'rviz', 'moveit.rviz']),
             'world':'house.world',
-            'init_x': '-2.25',
-            'init_y': '-1.50',
-            'init_yaw': '0.00'
+            'init_x': '0.0',
+            'init_y': '0.0',
+            'init_yaw': '0.0'
         }.items(),
     )
 
