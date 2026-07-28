@@ -397,92 +397,7 @@
       </include>
       <pose>-0.138245 -5.4443710 2.000000 0 -0 0</pose>
     </model>
-    
-    
-    <!-- <model name='PortraitA_01'> -->
-    <!--   <static>true</static> -->
-    <!--   <include> -->
-    <!--     <uri>model://aws_robomaker_residential_PortraitA_01</uri> -->
-    <!--   </include> -->
-    <!--   <pose>-2.712360 -4.817539 1.00000 0 -0 1.566796</pose> -->
-    <!-- </model> -->
-    <model name='AprilTag16_05_03'>
-      <static>true</static>
-      <include>
-        <uri>model://AprilTag16_05_01</uri>
-      </include>
-      <pose>-2.71 -4.71 1.5  0 0 1.5708</pose>
-    </model>
-    
-    <!-- <model name='PortraitB_01'> -->
-    <!--   <static>true</static> -->
-    <!--   <include> -->
-    <!--     <uri>model://aws_robomaker_residential_PortraitB_01</uri> -->
-    <!--   </include> -->
-    <!--   <pose>-1.279683 -5.429630 0.0 -0.076901 0 -3.116718</pose> -->
-    <!-- </model> -->
-    
-    <model name='PortraitB_02'>
-      <static>true</static>
-      <include>
-        <uri>model://aws_robomaker_residential_PortraitB_02</uri>
-      </include>
-      <pose>5.737017 3.080310 0.300000 0 -0 0</pose>
-    </model>
-    
-    <!-- <model name='PortraitB_03'> -->
-    <!--   <static>true</static> -->
-    <!--   <include> -->
-    <!--     <uri>model://aws_robomaker_residential_PortraitB_03</uri> -->
-    <!--   </include> -->
-    <!--   <pose>3.071380 -5.349366 0.005494 -0.168428 0.0 3.104232</pose> -->
-    <!-- </model> -->
-    
-    <model name='PortraitA_02'>
-      <static>true</static>
-      <include>
-        <uri>model://aws_robomaker_residential_PortraitA_02</uri>
-      </include>
-      <pose>7.937017 3.080310 0.300000 0 -0 3.14</pose>
-    </model>
-    
-    <!-- <model name='PortraitC_01'> -->
-    <!--   <static>true</static> -->
-    <!--   <include> -->
-    <!--     <uri>model://aws_robomaker_residential_PortraitC_01</uri> -->
-    <!--   </include> -->
-    <!--   <pose>-9.294904 -4.526084 1.000000 0 -0 1.554734</pose> -->
-    <!-- </model> -->
-    <model name='AprilTag16_05_04'>
-      <static>true</static>
-      <include>
-        <uri>model://AprilTag16_05_01</uri>
-      </include>
-      <pose>-9.29 -4.52 1.5 0 0 1.5708</pose>
-    </model>
-    
-    <model name='PortraitD_01'>
-      <static>true</static>
-      <include>
-        <uri>model://aws_robomaker_residential_PortraitD_01</uri>
-      </include>
-      <pose>0.789763 -5.478725 1.800000 0 -0 3.138531</pose>
-    </model>
-    <model name='PortraitD_02'>
-      <static>true</static>
-      <include>
-        <uri>model://aws_robomaker_residential_PortraitD_02</uri>
-      </include>
-      <pose>6.870181 3.080310 1.488439 0 -0 0</pose>
-    </model>
-    
-    <!-- <model name='PortraitE_01'> -->
-    <!--   <static>true</static> -->
-    <!--   <include> -->
-    <!--     <uri>model://aws_robomaker_residential_PortraitE_01</uri> -->
-    <!--   </include> -->
-    <!--   <pose>-5.773094 -5.492466 1.000000 0 -0 3.132627</pose> -->
-    <!-- </model> -->
+               
     <model name='AprilTag16_05_01'>
       <static>true</static>
       <include>
@@ -490,7 +405,6 @@
       </include>
       <pose>-7.5 -5.492466 1.5 0 0 0</pose>
     </model>
-
     <model name='AprilTag16_05_02'>
       <static>true</static>
       <include>
@@ -498,14 +412,20 @@
       </include>
       <pose>-4.5 -5.492466 1.5 0 0 0</pose>
     </model>
-    
-    <!-- <model name='PortraitE_02'> -->
-    <!--   <static>true</static> -->
-    <!--   <include> -->
-    <!--     <uri>model://aws_robomaker_residential_PortraitE_02</uri> -->
-    <!--   </include> -->
-    <!--   <pose>-6.193025 -1.590208 0.3 0 -0 0.004290</pose> -->
-    <!-- </model> -->
+    <model name='AprilTag16_05_03'>
+      <static>true</static>
+      <include>
+        <uri>model://AprilTag16_05_01</uri>
+      </include>
+      <pose>-2.71 -4.71 1.5  0 0 1.5708</pose>
+    </model>
+    <model name='AprilTag16_05_04'>
+      <static>true</static>
+      <include>
+        <uri>model://AprilTag16_05_01</uri>
+      </include>
+      <pose>-9.29 -4.52 1.5 0 0 1.5708</pose>
+    </model>
     <model name='AprilTag16_05_05'>
       <static>true</static>
       <include>
@@ -534,79 +454,147 @@
       </include>
       <pose>-4.99 -1.4087 1.3 0 0 0</pose>
     </model>
-    
-    <!-- <model name='DeskPortraitA_01'> -->
-    <!--   <static>true</static> -->
-    <!--   <include> -->
-    <!--     <uri>model://aws_robomaker_residential_DeskPortraitA_01</uri> -->
-    <!--   </include> -->
-    <!--   <pose>-0.036864 -5.110156 0.498660 0 -0 2.927784</pose> -->
-    <!-- </model> -->
-    <model name='DeskPortraitA_02'>
+    <model name='AprilTag16_05_09'>
       <static>true</static>
       <include>
-        <uri>model://aws_robomaker_residential_DeskPortraitA_02</uri>
+        <uri>model://AprilTag16_05_01</uri>
       </include>
-      
-      <pose>2.046082 -1.892926 0.0703880 -0.018328 -0.000441 1.576216</pose>
+      <pose>-2.71 2.1 1.5  0 0 1.5708</pose>
     </model>
-    <!-- <model name='DeskPortraitC_01'> -->
-    <!--   <static>true</static> -->
-    <!--   <include> -->
-    <!--     <uri>model://aws_robomaker_residential_DeskPortraitC_01</uri> -->
-    <!--   </include> -->
-    <!--   <pose>-7.746377 2.731075 0.694620 0.000488 -0.000359 -0.055499</pose> -->
-    <!-- </model> -->
-    <model name='DeskPortraitC_02'>
+    <model name='AprilTag16_05_10'>
       <static>true</static>
       <include>
-        <uri>model://aws_robomaker_residential_DeskPortraitC_02</uri>
+        <uri>model://AprilTag16_05_01</uri>
       </include>
-      <pose>0.964613 -1.586951 0.127676 0.001614 -0.000545 -1.578699</pose>
+      <pose>-9.29 2.1 1.5 0 0 1.5708</pose>
     </model>
-    <model name='DeskPortraitD_01'>
+    <model name='AprilTag16_05_11'>
       <static>true</static>
       <include>
-        <uri>model://aws_robomaker_residential_DeskPortraitD_01</uri>
+        <uri>model://AprilTag16_05_01</uri>
       </include>
-      <pose>2.645560 -5.376225 1.573738 0 -0 -3.112826</pose>
+      <pose>-6.0 3.1 1.8 0 0 0</pose>
     </model>
-    <!-- <model name='DeskPortraitD_02'> -->
-    <!--   <static>true</static> -->
-    <!--   <include> -->
-    <!--     <uri>model://aws_robomaker_residential_DeskPortraitD_02</uri> -->
-    <!--   </include> -->
-    <!--   <pose>-0.589211 -5.109890 0.192145 -0.000015 -0.000174 -3.112544</pose> -->
-    <!-- </model> -->
-    <!-- <model name='DeskPortraitD_03'> -->
-    <!--   <static>true</static> -->
-    <!--   <include> -->
-    <!--     <uri>model://aws_robomaker_residential_DeskPortraitD_03</uri> -->
-    <!--   </include> -->
-    <!--   <pose>1.826729 -1.464881 0.126208 0.000010 0.000006 -3.114380</pose> -->
-    <!-- </model> -->
-    <!-- <model name='DeskPortraitD_04'> -->
-    <!--   <static>true</static> -->
-    <!--   <include> -->
-    <!--     <uri>model://aws_robomaker_residential_DeskPortraitD_04</uri> -->
-    <!--   </include> -->
-    <!--   <pose>4.302132 -5.176568 0.202496 0.007118 -0.000001 3.046683</pose> -->
-    <!-- </model> -->
-    <!-- <model name='DeskPortraitB_01'> -->
-    <!--   <static>true</static> -->
-    <!--   <include> -->
-    <!--     <uri>model://aws_robomaker_residential_DeskPortraitB_01</uri> -->
-    <!--   </include> -->
-    <!--   <pose>3.547376 -5.083898 -0.012660 -0.336622 -0.000001 3.046741</pose> -->
-    <!-- </model> -->
-    <!-- <model name='DeskPortraitB_02'> -->
-    <!--   <static>true</static> -->
-    <!--   <include> -->
-    <!--     <uri>model://aws_robomaker_residential_DeskPortraitB_02</uri> -->
-    <!--   </include> -->
-    <!--   <pose>2.486270 -5.102525 -0.012660 -0.336621 0.000000 3.046798</pose> -->
-    <!-- </model> -->
-    
+    <model name='AprilTag16_05_12'>
+      <static>true</static>
+      <include>
+        <uri>model://AprilTag16_05_01</uri>
+      </include>
+      <pose>-2.4 2.1 1.5  0 0 1.5708</pose>
+    </model>
+    <model name='AprilTag16_05_13'>
+      <static>true</static>
+      <include>
+        <uri>model://AprilTag16_05_01</uri>
+      </include>
+      <pose>-2.4 -4.21 1.5  0 0 1.5708</pose>
+    </model>
+    <model name='AprilTag16_05_14'>
+      <static>true</static>
+      <include>
+        <uri>model://AprilTag16_05_01</uri>
+      </include>
+      <pose>-0.95 -5.492466 1.5 0 0 0</pose>
+    </model>
+    <model name='AprilTag16_05_15'>
+      <static>true</static>
+      <include>
+        <uri>model://AprilTag16_05_01</uri>
+      </include>
+      <pose>3.0 -5.492466 1.0 0 0 0</pose>
+    </model>
+    <model name='AprilTag16_05_16'>
+      <static>true</static>
+      <include>
+        <uri>model://AprilTag16_05_01</uri>
+      </include>
+      <pose>8.0 -5.492466 1.5 0 0 0</pose>
+    </model>
+    <model name='AprilTag16_05_17'>
+      <static>true</static>
+      <include>
+        <uri>model://AprilTag16_05_01</uri>
+      </include>
+      <pose>-1.0 5.5 1.5 0 0 0</pose>
+    </model>
+    <model name='AprilTag16_05_18'>
+      <static>true</static>
+      <include>
+        <uri>model://AprilTag16_05_01</uri>
+      </include>
+      <pose>3.2 5.5 1.5 0 0 0</pose>
+    </model>
+    <model name='AprilTag16_05_19'>
+      <static>true</static>
+      <include>
+        <uri>model://AprilTag16_05_01</uri>
+      </include>
+      <pose>4.6 2.1 1.5  0 0 1.5708</pose>
+    </model>
+    <model name='AprilTag16_05_20'>
+      <static>true</static>
+      <include>
+        <uri>model://AprilTag16_05_01</uri>
+      </include>
+      <pose>4.75 2.1 1.5  0 0 1.5708</pose>
+    </model>
+    <model name='AprilTag16_05_21'>
+      <static>true</static>
+      <include>
+        <uri>model://AprilTag16_05_01</uri>
+      </include>
+      <pose>4.82 -4.2 1.5  0 0 1.5708</pose>
+    </model>
+    <model name='AprilTag16_05_22'>
+      <static>true</static>
+      <include>
+        <uri>model://AprilTag16_05_01</uri>
+      </include>
+      <pose>4.97 -4.2 1.5  0 0 1.5708</pose>
+    </model>
+    <model name='AprilTag16_05_23'>
+      <static>true</static>
+      <include>
+        <uri>model://AprilTag16_05_01</uri>
+      </include>
+      <pose>8.3 3.1 1.5 0 0 0</pose>
+    </model>
+    <model name='AprilTag16_05_24'>
+      <static>true</static>
+      <include>
+        <uri>model://AprilTag16_05_01</uri>
+      </include>
+      <pose>5.6 3.1 1.5 0 0 0</pose>
+    </model>
+    <model name='AprilTag16_05_25'>
+      <static>true</static>
+      <include>
+        <uri>model://AprilTag16_05_01</uri>
+      </include>
+      <pose>9.35 0.98 1.5  0 0 1.5708</pose>
+    </model>
+    <model name='AprilTag16_05_26'>
+      <static>true</static>
+      <include>
+        <uri>model://AprilTag16_05_01</uri>
+      </include>
+      <pose>9.35 -3.38 1.5  0 0 1.5708</pose>
+    </model>
+
+    <model name='PortraitD_01'>
+      <static>true</static>
+      <include>
+        <uri>model://aws_robomaker_residential_PortraitD_01</uri>
+      </include>
+      <pose>0.789763 -5.478725 1.800000 0 -0 3.138531</pose>
+    </model>
+    <model name='PortraitD_02'>
+      <static>true</static>
+      <include>
+        <uri>model://aws_robomaker_residential_PortraitD_02</uri>
+      </include>
+      <pose>6.870181 3.080310 1.488439 0 -0 0</pose>
+    </model>    
     <model name='Rangehood_01_001'>
       <static>true</static>
       <include>
@@ -682,8 +670,7 @@
       <pose>0.615509 -5.105954 -0.011049 0 -0 1.5700</pose>
       
     </model>
-    <model
-        name='Vase_01_001'>
+    <model name='Vase_01_001'>
       <static>true</static>
       <include>
         <uri>model://aws_robomaker_residential_Vase_01</uri>
@@ -775,6 +762,36 @@
         <uri>model://aws_robomaker_residential_RoomWindow_01</uri>
       </include>
       <pose>-2.396624 4.387607 0.502739 0 -0 0</pose>
+    </model>
+
+    
+    <model name='cheezit_big_original_01'>
+      <static>false</static>
+      <include>
+        <uri>model://cheezit_big_original</uri>
+      </include>
+      <pose>5.8 1.0 1.2 0 1.5708 -2.0</pose>
+    </model>
+    <model name='mustard_01'>
+      <static>false</static>
+      <include>
+        <uri>model://mustard</uri>
+      </include>
+      <pose>7.32 0.72 0.95 0 0 0.4</pose>
+    </model>
+    <model name='coke_can_01'>
+      <static>false</static>
+      <include>
+        <uri>model://coke_can</uri>
+      </include>
+      <pose>4.5 -5.2 0.45 0 0 0.4</pose>
+    </model>
+    <model name='hsr_pringles_01'>
+      <static>false</static>
+      <include>
+        <uri>model://hsr_pringles</uri>
+      </include>
+      <pose>4.5 -5.2 0.75 0 0 0.4</pose>
     </model>
     
     
@@ -901,6 +918,7 @@
       <cast_shadows>0</cast_shadows>
       <direction>0 0 -1</direction>
     </light>
+
     
   </world>
 </sdf>

@@ -8,8 +8,8 @@ from ament_index_python.packages import get_package_share_directory
 import os
 
 def generate_launch_description():
-    mvn_planning_pkg = get_package_share_directory('motion_planning')
-    rviz_config_file = os.path.join(mvn_planning_pkg, 'rviz', 'mapping.rviz')
+    navig_utils_pkg  = get_package_share_directory('navig_utils')
+    rviz_config_file = os.path.join(navig_utils_pkg, 'rviz', 'mapping.rviz')
 
     return LaunchDescription([
         Node(
@@ -26,7 +26,7 @@ def generate_launch_description():
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(PathJoinSubstitution([FindPackageShare('slam_toolbox'), 'launch', 'online_async_launch.py'])),
             launch_arguments={
-                'slam_params_file': os.path.join(mvn_planning_pkg, 'config', 'mapper_params_online_async.yaml'),
+                'slam_params_file': os.path.join(navig_utils_pkg, 'config', 'mapper_params_online_async.yaml'),
             }.items(),
         )
     ])

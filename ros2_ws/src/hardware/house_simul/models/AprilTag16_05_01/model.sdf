@@ -4,10 +4,7 @@
     <link name="link">
       <collision name="collision">
         <geometry>
-          <mesh>
-            <uri>model://AprilTag16_05_01/meshes/AprilTag16_05_01.DAE</uri>
-            <scale>1 1 1</scale>
-          </mesh>
+          <box><size>1.0 0.01 1.0</size></box>
         </geometry>
       </collision>
       <visual name="visual">

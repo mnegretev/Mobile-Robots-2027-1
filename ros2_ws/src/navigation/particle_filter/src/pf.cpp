@@ -193,8 +193,8 @@ private:
     }
 
     void gz_pose_callback(const geometry_msgs::msg::PoseArray::SharedPtr msg){
-	this->groundtruth_x = msg->poses[0].position.x + 2.2508;
-	this->groundtruth_y = msg->poses[0].position.y + 1.5;
+	this->groundtruth_x = msg->poses[0].position.x;
+	this->groundtruth_y = msg->poses[0].position.y;
 	double w = msg->poses[0].orientation.w;
 	double z = msg->poses[0].orientation.z;
 	this->groundtruth_a = atan2(z, w)*2;
