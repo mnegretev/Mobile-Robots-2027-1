@@ -645,7 +645,7 @@
       <include>
         <uri>model://aws_robomaker_residential_Trash_01</uri>
       </include>
-      <pose>-8.704151 1.00058 0.011 0 -0 0</pose>
+      <pose>-8.704151 0.00058 0.011 0 -0 0</pose>
     </model>
     <model name='TV_01_001'>
       <static>true</static>
@@ -786,12 +786,68 @@
       </include>
       <pose>4.5 -5.2 0.45 0 0 0.4</pose>
     </model>
-    <model name='hsr_pringles_01'>
+    <model name='coffe_mug_01'>
       <static>false</static>
       <include>
-        <uri>model://hsr_pringles</uri>
+        <uri>model://ACE_Coffee_Mug_Kristen_16_oz_cup</uri>
       </include>
-      <pose>4.5 -5.2 0.75 0 0 0.4</pose>
+      <pose>4.5 -5.2 1.05 0 0 0.4</pose>
+    </model>
+    <model name='coke_green_01'>
+      <static>false</static>
+      <include>
+        <uri>model://movable_coke_can_green</uri>
+      </include>
+      <pose>4.2 -5.2 0.75 0 0 0.4</pose>
+    </model>
+    <model name='milk_cup_01'>
+      <static>false</static>
+      <include>
+        <uri>model://milk_cup</uri>
+      </include>
+      <pose>-0.55 4.11 0.55 0 0 0</pose>
+    </model>
+    <model name='nesquick_01'>
+      <static>false</static>
+      <include>
+        <uri>model://Nestle_Nesquik_Chocolate_Powder_Flavored_Milk_Additive_109_Oz_Canister</uri>
+      </include>
+      <pose>1.1 -5.0 0.55 0 0 -0.4</pose>
+    </model>
+    <model name='snacks_01'>
+      <static>false</static>
+      <include>
+        <uri>model://Black_Forest_Fruit_Snacks_Juicy_Filled_Centers_10_pouches_9_oz_total</uri>
+      </include>
+      <pose>1.8 -1.5 0.55 0 0 0.4</pose>
+    </model>
+    <model name='l_tyrosine_01'>
+      <static>false</static>
+      <include>
+        <uri>model://LTyrosine</uri>
+      </include>
+      <pose>-8.8 1.6 0.75 0 0 0.4</pose>
+    </model>
+    <model name='u_by_kotex_01'>
+      <static>false</static>
+      <include>
+        <uri>model://U_By_Kotex_Cleanwear_Heavy_Flow_Pads_32_Ct</uri>
+      </include>
+      <pose>-7.7 2.8 0.75 0 0 0.4</pose>
+    </model>
+    <model name='nescafe_01'>
+      <static>false</static>
+      <include>
+        <uri>model://Nescafe_Memento_Latte_Caramel_8_08_oz_23_g_packets_64_oz_184_g</uri>
+      </include>
+      <pose>-4.4 2.8 0.75 0 0 0.4</pose>
+    </model>
+    <model name='tennis_shoe_01'>
+      <static>false</static>
+      <include>
+        <uri>model://ASICS_GELBlur33_20_GS_BlackWhiteSafety_Orange</uri>
+      </include>
+      <pose>-6.0 -4.6 0.3 0 0 -0.3</pose>
     </model>
     
     

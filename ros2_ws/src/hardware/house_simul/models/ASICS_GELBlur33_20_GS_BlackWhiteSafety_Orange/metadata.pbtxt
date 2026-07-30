@@ -1,0 +1,39 @@
+model {
+  file: "model.sdf"
+}
+name: "ASICS_GELBlur33_20_GS_BlackWhiteSafety_Orange"
+description: "ASICS GEL-Blur33\342\204\242 2.0 GS - Black/White/Safety Orange\nFast and form fitting, the GEL-Blur33\342\204\242 2.0 GS delivers great comfort and flexibility in a lightweight package."
+version: 1
+authors {
+  name: "Google"
+  email: "scanned-objects@google.com"
+}
+legal {
+  copyright: "Copyright 2020 Google LLC."
+  license: "Creative Commons Attribution 4.0 International"
+}
+annotations {
+  key: "brand"
+  value: "Asics"
+}
+annotations {
+  key: "gtin"
+  value: "885681575180"
+}
+annotations {
+  key: "mpn"
+  value: "c227n.9001"
+}
+annotations {
+  key: "sku"
+  value: "2013-03-12-885681575180"
+}
+compatibilities {
+  name: "Gazebo"
+  version {
+    major: 11
+  }
+}
+categories {
+  first: "Shoe"
+}

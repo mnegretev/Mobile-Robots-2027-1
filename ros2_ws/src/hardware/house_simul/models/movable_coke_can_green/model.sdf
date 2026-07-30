@@ -1,0 +1,36 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+    <model name="movable_coke_can_green">
+        <link name="link">
+            <inertial>
+                <pose>0 0 0 0 0 0</pose>
+                <mass>0.0149</mass>
+                <inertia>
+                <ixx>0.00001</ixx>
+                <ixy>0.0</ixy>
+                <ixz>0.0</ixz>
+                <iyy>0.00001</iyy>
+                <iyz>0.0</iyz>
+                <izz>0.00001</izz>
+                </inertia>
+            </inertial>
+            <collision name="collision">
+                <pose>0 0 0.061 0 0 0</pose>
+                <geometry>
+                    <cylinder>
+                    <radius>0.033</radius>
+                    <length>0.122</length>
+                    </cylinder>
+                </geometry>
+            </collision>
+            <visual name="visual">
+                <geometry>
+                    <mesh>
+                        <uri>model://movable_coke_can_green/meshes/coke_can.obj</uri>
+                        <scale>1 1 1</scale>
+                    </mesh>
+                </geometry>
+            </visual>
+        </link>
+    </model>
+</sdf>
