@@ -37,11 +37,24 @@ MainWindow::MainWindow(QWidget *parent)
     QObject::connect(ui->armTxtAngles5, SIGNAL(valueChanged(double)), this, SLOT(armSbAnglesValueChanged(double)));
     QObject::connect(ui->armTxtAngles6, SIGNAL(valueChanged(double)), this, SLOT(armSbAnglesValueChanged(double)));
     QObject::connect(ui->armTxtArticularGoal, SIGNAL(returnPressed()), this, SLOT(armTxtArticularGoalReturnPressed()));
+    QObject::connect(ui->armBtnXp, SIGNAL(pressed()), this, SLOT(armBtnXpPressed()));
+    QObject::connect(ui->armBtnXm, SIGNAL(pressed()), this, SLOT(armBtnXmPressed()));
+    QObject::connect(ui->armBtnYp, SIGNAL(pressed()), this, SLOT(armBtnYpPressed()));
+    QObject::connect(ui->armBtnYm, SIGNAL(pressed()), this, SLOT(armBtnYmPressed()));
+    QObject::connect(ui->armBtnZp, SIGNAL(pressed()), this, SLOT(armBtnZpPressed()));
+    QObject::connect(ui->armBtnZm, SIGNAL(pressed()), this, SLOT(armBtnZmPressed()));
+    QObject::connect(ui->armBtnRollp, SIGNAL(pressed()), this, SLOT(armBtnRollpPressed()));
+    QObject::connect(ui->armBtnRollm, SIGNAL(pressed()), this, SLOT(armBtnRollmPressed()));
+    QObject::connect(ui->armBtnPitchp, SIGNAL(pressed()), this, SLOT(armBtnPitchpPressed()));
+    QObject::connect(ui->armBtnPitchm, SIGNAL(pressed()), this, SLOT(armBtnPitchmPressed()));
+    QObject::connect(ui->armBtnYawp, SIGNAL(pressed()), this, SLOT(armBtnYawpPressed()));
+    QObject::connect(ui->armBtnYawm, SIGNAL(pressed()), this, SLOT(armBtnYawmPressed()));
     QObject::connect(ui->armTxtCartesianGoal, SIGNAL(returnPressed()), this, SLOT(armTxtCartesianGoalReturnPressed()));
 
     ros_timer = new QTimer(this);
     QObject::connect(ros_timer, &QTimer::timeout, this, &MainWindow::processRosMessages);
-    ros_timer->start(20);
+    ros_timer->start(100);
+    this->updating_arm_q_controls = false;
 }
 
 MainWindow::~MainWindow()
@@ -160,27 +173,49 @@ void MainWindow::navBtnExecPath_pressed()
 {
 }
 
+void MainWindow::update_arm_q_controls(std::vector<double>& Q){
+    this->updating_arm_q_controls = true;
+    QString s = "";
+    for(int i=0; i<5; i++)
+	s += QString::number(Q[i], 'f',2) + " ";
+    s += QString::number(Q[5], 'f',2);
+    ui->armTxtArticularGoal->setText(s);
+    ui->armTxtAngles1->setValue(Q[0]);
+    ui->armTxtAngles2->setValue(Q[1]);
+    ui->armTxtAngles3->setValue(Q[2]);
+    ui->armTxtAngles4->setValue(Q[3]);
+    ui->armTxtAngles5->setValue(Q[4]);
+    ui->armTxtAngles6->setValue(Q[5]);
+    this->updating_arm_q_controls = false;
+}
+
 void MainWindow::armSbAnglesValueChanged(double d)
 {
-   if(ui->armGbArticular->isEnabled())
-    {
-      std::vector<double> Q(6);
-      Q[0] = ui->armTxtAngles1->value();
-      Q[1] = ui->armTxtAngles2->value();
-      Q[2] = ui->armTxtAngles3->value();
-      Q[3] = ui->armTxtAngles4->value();
-      Q[4] = ui->armTxtAngles5->value();
-      Q[5] = ui->armTxtAngles6->value();
-      this->commNode->publish_arm_joint_traj(Q);
-    }
+    if(this->updating_arm_q_controls)
+	return;
+    
+    std::vector<double> Q(6);
+    Q[0] = ui->armTxtAngles1->value();
+    Q[1] = ui->armTxtAngles2->value();
+    Q[2] = ui->armTxtAngles3->value();
+    Q[3] = ui->armTxtAngles4->value();
+    Q[4] = ui->armTxtAngles5->value();
+    Q[5] = ui->armTxtAngles6->value();
+    this->commNode->publish_arm_joint_traj(Q);
+    this->update_arm_q_controls(Q);
 }
 
 void MainWindow::armSbGripperValueChanged(double d)
 {
+    if(this->updating_arm_q_controls)
+	return;
 }
 
 void MainWindow::armTxtArticularGoalReturnPressed()
 {
+    if(this->updating_arm_q_controls)
+	return;
+    
     std::vector<double> Q(6);
     std::vector<std::string> parts;
     
@@ -206,6 +241,7 @@ void MainWindow::armTxtArticularGoalReturnPressed()
 	return;
     }
     this->commNode->publish_arm_joint_traj(Q);
+    this->update_arm_q_controls(Q);
 }
 
 void MainWindow::armTxtCartesianGoalReturnPressed()
@@ -235,56 +271,99 @@ void MainWindow::armTxtCartesianGoalReturnPressed()
 	this->ui->armTxtCartesianGoal->setText("Invalid format (x, y, z, R, P, Y)");
 	return;
     }
-    this->commNode->call_ik_pose2pose(X[0], X[1], X[2], X[3], X[4], X[5], Q);
-    this->commNode->publish_arm_joint_traj(Q);
+    if(this->commNode->call_ik_pose2pose(X[0], X[1], X[2], X[3], X[4], X[5], Q)){
+	this->commNode->publish_arm_joint_traj(Q);
+	this->update_arm_q_controls(Q);
+    }
+}
+
+void MainWindow::change_cartesian(std::vector<double> delta_X){
+    double x, y, z, roll, pitch, yaw;
+    std::vector<double> Q(6);
+    if(!this->commNode->call_fwd_kinematics(this->commNode->current_arm_joints, x, y, z, roll, pitch, yaw))
+	return;
+    x += delta_X[0];
+    y += delta_X[1];
+    z += delta_X[2];
+    roll += delta_X[3];
+    pitch += delta_X[4];
+    yaw += delta_X[5];
+    if(this->commNode->call_ik_pose2pose(x, y, z, roll, pitch, yaw, Q)){
+	this->commNode->publish_arm_joint_traj(Q);
+	this->update_arm_q_controls(Q);
+    }
 }
 
 void MainWindow::armBtnXpPressed()
 {
+    std::vector<double> delta_X = {0.05, 0.0, 0.0, 0.0, 0.0, 0.0};
+    this->change_cartesian(delta_X);
 }
 
 void MainWindow::armBtnXmPressed()
 {
+    std::vector<double> delta_X = {-0.05, 0.0, 0.0, 0.0, 0.0, 0.0};
+    this->change_cartesian(delta_X);
 }
 
 void MainWindow::armBtnYpPressed()
 {
+    std::vector<double> delta_X = {0.0, 0.05, 0.0, 0.0, 0.0, 0.0};
+    this->change_cartesian(delta_X);
 }
 
 void MainWindow::armBtnYmPressed()
 {
+    std::vector<double> delta_X = {0.0, -0.05, 0.0, 0.0, 0.0, 0.0};
+    this->change_cartesian(delta_X);
 }
 
 void MainWindow::armBtnZpPressed()
 {
+    std::vector<double> delta_X = {0.0, 0.0, 0.05, 0.0, 0.0, 0.0};
+    this->change_cartesian(delta_X);
 }
 
 void MainWindow::armBtnZmPressed()
 {
+    std::vector<double> delta_X = {0.0, 0.0, -0.05, 0.0, 0.0, 0.0};
+    this->change_cartesian(delta_X);
 }
 
 void MainWindow::armBtnRollpPressed()
 {
+    std::vector<double> delta_X = {0.0, 0.0, 0.0, 0.1, 0.0, 0.0};
+    this->change_cartesian(delta_X);
 }
 
 void MainWindow::armBtnRollmPressed()
 {
+    std::vector<double> delta_X = {0.0, 0.0, 0.0, -0.1, 0.0, 0.0};
+    this->change_cartesian(delta_X);
 }
 
 void MainWindow::armBtnPitchpPressed()
 {
+    std::vector<double> delta_X = {0.0, 0.0, 0.0, 0.0, 0.1, 0.0};
+    this->change_cartesian(delta_X);
 }
 
 void MainWindow::armBtnPitchmPressed()
 {
+    std::vector<double> delta_X = {0.0, 0.0, 0.0, 0.0, -0.1, 0.0};
+    this->change_cartesian(delta_X);
 }
 
 void MainWindow::armBtnYawpPressed()
 {
+    std::vector<double> delta_X = {0.0, 0.0, 0.0, 0.0, 0.0, 0.1};
+    this->change_cartesian(delta_X);
 }
 
 void MainWindow::armBtnYawmPressed()
 {
+    std::vector<double> delta_X = {0.0, 0.0, 0.0, 0.0, 0.0, -0.1};
+    this->change_cartesian(delta_X);
 }
 
 void MainWindow::arm_get_IK_and_update_ui(std::vector<double> cartesian)
@@ -301,13 +380,29 @@ void MainWindow::sprTxtFakeRecogReturnPressed()
 }
 
 void MainWindow::processRosMessages() {
-  this->commNode->spin_once();
+  this->commNode->spin_some();
   this->ui->armLblCurrentQ1->setText(QString::number(this->commNode->current_arm_joints[0], 'f',3));
   this->ui->armLblCurrentQ2->setText(QString::number(this->commNode->current_arm_joints[1], 'f',3));
   this->ui->armLblCurrentQ3->setText(QString::number(this->commNode->current_arm_joints[2], 'f',3));
   this->ui->armLblCurrentQ4->setText(QString::number(this->commNode->current_arm_joints[3], 'f',3));
   this->ui->armLblCurrentQ5->setText(QString::number(this->commNode->current_arm_joints[4], 'f',3));
   this->ui->armLblCurrentQ6->setText(QString::number(this->commNode->current_arm_joints[5], 'f',3));
+  double x, y, z, roll, pitch, yaw;
+  if(this->commNode->call_fwd_kinematics(this->commNode->current_arm_joints, x, y, z, roll, pitch, yaw)){
+      this->ui->armLblCurrentX->setText(QString::number(x, 'f', 3));
+      this->ui->armLblCurrentY->setText(QString::number(y, 'f', 3));
+      this->ui->armLblCurrentZ->setText(QString::number(z, 'f', 3));
+      this->ui->armLblCurrentRoll->setText(QString::number(roll, 'f', 3));
+      this->ui->armLblCurrentPitch->setText(QString::number(pitch, 'f', 3));
+      this->ui->armLblCurrentYaw->setText(QString::number(yaw, 'f', 3));
+  }else{
+      this->ui->armLblCurrentX->setText("NaN");
+      this->ui->armLblCurrentY->setText("NaN");
+      this->ui->armLblCurrentZ->setText("NaN");
+      this->ui->armLblCurrentRoll->setText("NaN");
+      this->ui->armLblCurrentPitch->setText("NaN");
+      this->ui->armLblCurrentYaw->setText("NaN");
+  }
   if(!rclcpp::ok())
     QApplication::quit();
 }

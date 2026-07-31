@@ -9,6 +9,7 @@
 #include "nav_msgs/srv/get_plan.hpp"
 #include "nav_msgs/msg/path.hpp"
 #include "manip_msgs/srv/inverse_kinematics_pose2_pose.hpp"
+#include "manip_msgs/srv/forward_kinematics.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "trajectory_msgs/msg/joint_trajectory.hpp"
@@ -22,7 +23,7 @@ public:
 
     std::vector<double> current_arm_joints;
 
-    void spin_once();
+    void spin_some();
     void publish_cmd_vel(double linear_x, double linear_y, double angular);
     void publish_cmd_vel(double linear_x, double angular);
     void start_publishing_cmd_vel(double linear_x, double linear_y, double angular);
@@ -31,6 +32,7 @@ public:
     bool call_plan_path(double start_x, double start_y, double goal_x, double goal_y, nav_msgs::msg::Path& path);
     void publish_arm_joint_traj(std::vector<double> Q);
     bool call_ik_pose2pose(double x, double y, double z, double roll, double pitch, double yaw, std::vector<double>& Q);
+    bool call_fwd_kinematics(std::vector<double>& Q, double& x, double& y, double& z, double& roll, double& pitch, double& yaw);
 
 private:
     bool _publishing_cmd_vel;
@@ -43,6 +45,7 @@ private:
 
     rclcpp::Client<nav_msgs::srv::GetPlan>::SharedPtr _clt_plan_path;
     rclcpp::Client<manip_msgs::srv::InverseKinematicsPose2Pose>::SharedPtr _clt_ik_pose2pose;
+    rclcpp::Client<manip_msgs::srv::ForwardKinematics>::SharedPtr _clt_fwd_kinematics;
 
     void timer_callback();
     void callback_joint_states(const sensor_msgs::msg::JointState &msg);

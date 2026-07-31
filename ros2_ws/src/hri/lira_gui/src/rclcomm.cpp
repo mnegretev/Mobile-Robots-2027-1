@@ -16,12 +16,13 @@ RclComm::RclComm(): Node("justina_gui_node")
     this->_sub_joint_states = this->create_subscription<sensor_msgs::msg::JointState>("/joint_states",1,std::bind(&RclComm::callback_joint_states,this,std::placeholders::_1));
     this->_clt_plan_path = this->create_client<nav_msgs::srv::GetPlan>("/path_planning/plan_path");
     this->_clt_ik_pose2pose = this->create_client<manip_msgs::srv::InverseKinematicsPose2Pose>("/manipulation/ik_pose2pose");
+    this->_clt_fwd_kinematics = this->create_client<manip_msgs::srv::ForwardKinematics>("/manipulation/forward_kinematics");
 }
 
-void RclComm::spin_once()
+void RclComm::spin_some()
 {
   if(rclcpp::ok()) {
-        rclcpp::spin_some(this->get_node_base_interface());
+      rclcpp::spin_some(this->get_node_base_interface());
   }
 }
 
@@ -112,7 +113,7 @@ void RclComm::publish_arm_joint_traj(std::vector<double> Q)
     if(fabs(Q[i] - this->current_arm_joints[i]) > max_delta)
       max_delta = fabs(Q[i] - this->current_arm_joints[i]);
 
-  double time = 0.5 + 1.0*max_delta;
+  double time = 0.5 + 0.5*max_delta;
   trajectory_msgs::msg::JointTrajectory msg;
   msg.header.stamp = this->get_clock()->now();
   msg.joint_names = {"joint1", "joint2", "joint3", "joint4", "joint5", "joint6"};
@@ -132,9 +133,10 @@ bool RclComm::call_ik_pose2pose(double x, double y, double z, double roll, doubl
     req->roll = roll;
     req->pitch = pitch;
     req->yaw = yaw;
-    req->initial_guess = {0,0,0,0,0,0};
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "LiraGUI->Waiting for IK service to be available...");
-    while(!this->_clt_ik_pose2pose->wait_for_service(std::chrono::milliseconds(500)))
+    req->initial_guess = this->current_arm_joints;
+    //RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "LiraGUI->Waiting for IK service to be available...");
+    int counter_timeout = 5;
+    while(!this->_clt_ik_pose2pose->wait_for_service(std::chrono::milliseconds(100)) && --counter_timeout > 0)
     {
 	if (!rclcpp::ok()) {
 	    RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Interrupted while waiting for the IK service. Exiting.");
@@ -142,7 +144,9 @@ bool RclComm::call_ik_pose2pose(double x, double y, double z, double roll, doubl
 	}
 	RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "service IK not available, waiting again...");
     }
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "LiraGUI->IK service available. Trying to solve IK...");
+    if(counter_timeout <= 0)
+	return false;
+    //RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "LiraGUI->IK service available. Trying to solve IK...");
     auto response = this->_clt_ik_pose2pose->async_send_request(req);
     // Wait for the result.
     bool success = rclcpp::spin_until_future_complete(this->get_node_base_interface(), response) == rclcpp::FutureReturnCode::SUCCESS;
@@ -150,12 +154,44 @@ bool RclComm::call_ik_pose2pose(double x, double y, double z, double roll, doubl
     {
 	Q = response.get()->q;
 	RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "LiraGUI.->IK solved successfully");
-	return true;
     } else {
 	RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "LiraGUI.->Cannot solve IK :'(");
-	return false;
     }
-    return true;
+    return success;
+}
+
+bool RclComm::call_fwd_kinematics(std::vector<double>& Q, double& x, double& y, double& z, double& roll, double& pitch, double& yaw){
+    auto req = std::make_shared<manip_msgs::srv::ForwardKinematics::Request>();
+    req->q = Q;
+    int counter = 5;
+    while(!this->_clt_fwd_kinematics->wait_for_service(std::chrono::milliseconds(20)) && --counter > 0)
+    {
+	if (!rclcpp::ok()) {
+	    //RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Interrupted while waiting for the FK service. Exiting.");
+	    return 0;
+	}
+	//RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "service FK not available, waiting again...");
+    }
+    if(counter <= 0)
+	return false;
+    //RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "LiraGUI->FK service available. Trying to get FK...");
+    auto response = this->_clt_fwd_kinematics->async_send_request(req);
+    // Wait for the result.
+    bool success = rclcpp::spin_until_future_complete(this->get_node_base_interface(), response) == rclcpp::FutureReturnCode::SUCCESS;
+    if (success)
+    {
+	auto result = response.get();
+        x = result->x;
+	y = result->y;
+	z = result->z;
+	roll = result->roll;
+	pitch = result->pitch;
+	yaw = result->yaw;
+	//RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "LiraGUI.->FK calculated successfully");
+    } else {
+	//RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "LiraGUI.->Cannot get FK :'(");
+    }
+    return success;
 }
 
 // void RclComm::recv_callback(const std_msgs::msg::String &msg)

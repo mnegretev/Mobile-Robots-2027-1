@@ -59,11 +59,14 @@ public slots:
     void sprTxtFakeRecogReturnPressed();
 
 private:
+    bool updating_arm_q_controls;
     Ui::MainWindow *ui;
     RclComm *commNode;
     QTimer *ros_timer;
 
 private slots:
     void processRosMessages();
+    void update_arm_q_controls(std::vector<double>& Q);
+    void change_cartesian(std::vector<double> delta_X);
 };
 #endif // MAINWINDOW_H
