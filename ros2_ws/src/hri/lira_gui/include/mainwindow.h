@@ -53,6 +53,8 @@ public slots:
     void armBtnPitchmPressed();
     void armBtnYawpPressed();
     void armBtnYawmPressed();
+    void armBtnHomePressed();
+    void armBtnNavigatePressed();
     void arm_get_IK_and_update_ui(std::vector<double> cartesian);
 
     void spgTxtSayReturnPressed();
@@ -63,6 +65,7 @@ private:
     Ui::MainWindow *ui;
     RclComm *commNode;
     QTimer *ros_timer;
+    int timer_counter;
 
 private slots:
     void processRosMessages();

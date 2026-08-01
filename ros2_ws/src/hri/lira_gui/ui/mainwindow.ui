@@ -772,7 +772,7 @@ QRadioButton::indicator{
         <x>0</x>
         <y>10</y>
         <width>311</width>
-        <height>321</height>
+        <height>301</height>
        </rect>
       </property>
       <property name="styleSheet">
@@ -785,20 +785,20 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>50</x>
-         <y>220</y>
+         <y>200</y>
          <width>251</width>
          <height>31</height>
         </rect>
        </property>
        <property name="text">
-        <string>0.20 0.01 0.00 3.14 0.00 0.00</string>
+        <string/>
        </property>
       </widget>
       <widget class="QLabel" name="navLblStartPose_2">
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>230</y>
+         <y>210</y>
          <width>51</width>
          <height>17</height>
         </rect>
@@ -887,7 +887,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>280</y>
+         <y>260</y>
          <width>41</width>
          <height>17</height>
         </rect>
@@ -938,7 +938,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>20</x>
-         <y>300</y>
+         <y>280</y>
          <width>21</width>
          <height>17</height>
         </rect>
@@ -951,7 +951,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>70</x>
-         <y>300</y>
+         <y>280</y>
          <width>21</width>
          <height>17</height>
         </rect>
@@ -964,7 +964,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>120</x>
-         <y>300</y>
+         <y>280</y>
          <width>21</width>
          <height>17</height>
         </rect>
@@ -977,7 +977,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>170</x>
-         <y>300</y>
+         <y>280</y>
          <width>21</width>
          <height>17</height>
         </rect>
@@ -990,7 +990,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>270</x>
-         <y>300</y>
+         <y>280</y>
          <width>21</width>
          <height>17</height>
         </rect>
@@ -1003,7 +1003,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>220</x>
-         <y>300</y>
+         <y>280</y>
          <width>21</width>
          <height>17</height>
         </rect>
@@ -1016,7 +1016,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>60</x>
-         <y>280</y>
+         <y>260</y>
          <width>41</width>
          <height>17</height>
         </rect>
@@ -1029,7 +1029,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>110</x>
-         <y>280</y>
+         <y>260</y>
          <width>41</width>
          <height>17</height>
         </rect>
@@ -1042,7 +1042,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>160</x>
-         <y>280</y>
+         <y>260</y>
          <width>41</width>
          <height>17</height>
         </rect>
@@ -1055,7 +1055,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>210</x>
-         <y>280</y>
+         <y>260</y>
          <width>41</width>
          <height>17</height>
         </rect>
@@ -1068,7 +1068,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>260</x>
-         <y>280</y>
+         <y>260</y>
          <width>41</width>
          <height>17</height>
         </rect>
@@ -1081,7 +1081,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>260</y>
+         <y>240</y>
          <width>71</width>
          <height>17</height>
         </rect>
@@ -1094,7 +1094,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>40</x>
-         <y>130</y>
+         <y>120</y>
          <width>50</width>
          <height>31</height>
         </rect>
@@ -1113,7 +1113,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>40</x>
-         <y>170</y>
+         <y>160</y>
          <width>50</width>
          <height>31</height>
         </rect>
@@ -1132,7 +1132,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>120</x>
-         <y>130</y>
+         <y>120</y>
          <width>50</width>
          <height>31</height>
         </rect>
@@ -1151,7 +1151,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>120</x>
-         <y>170</y>
+         <y>160</y>
          <width>50</width>
          <height>31</height>
         </rect>
@@ -1170,7 +1170,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>200</x>
-         <y>130</y>
+         <y>120</y>
          <width>50</width>
          <height>31</height>
         </rect>
@@ -1189,7 +1189,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>200</x>
-         <y>170</y>
+         <y>160</y>
          <width>50</width>
          <height>31</height>
         </rect>
@@ -1211,7 +1211,7 @@ QRadioButton::indicator{
         <x>310</x>
         <y>10</y>
         <width>351</width>
-        <height>321</height>
+        <height>301</height>
        </rect>
       </property>
       <property name="title">
@@ -1452,7 +1452,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>50</x>
-         <y>220</y>
+         <y>200</y>
          <width>291</width>
          <height>31</height>
         </rect>
@@ -1465,7 +1465,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>230</y>
+         <y>210</y>
          <width>51</width>
          <height>16</height>
         </rect>
@@ -1516,7 +1516,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>220</x>
-         <y>300</y>
+         <y>280</y>
          <width>21</width>
          <height>17</height>
         </rect>
@@ -1529,7 +1529,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>20</x>
-         <y>300</y>
+         <y>280</y>
          <width>21</width>
          <height>17</height>
         </rect>
@@ -1542,7 +1542,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>260</y>
+         <y>240</y>
          <width>71</width>
          <height>17</height>
         </rect>
@@ -1555,7 +1555,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>120</x>
-         <y>300</y>
+         <y>280</y>
          <width>21</width>
          <height>17</height>
         </rect>
@@ -1568,7 +1568,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>260</x>
-         <y>280</y>
+         <y>260</y>
          <width>41</width>
          <height>17</height>
         </rect>
@@ -1581,7 +1581,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>170</x>
-         <y>300</y>
+         <y>280</y>
          <width>21</width>
          <height>17</height>
         </rect>
@@ -1594,7 +1594,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>60</x>
-         <y>280</y>
+         <y>260</y>
          <width>41</width>
          <height>17</height>
         </rect>
@@ -1607,7 +1607,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>160</x>
-         <y>280</y>
+         <y>260</y>
          <width>41</width>
          <height>17</height>
         </rect>
@@ -1620,7 +1620,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>70</x>
-         <y>300</y>
+         <y>280</y>
          <width>21</width>
          <height>17</height>
         </rect>
@@ -1633,7 +1633,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>110</x>
-         <y>280</y>
+         <y>260</y>
          <width>41</width>
          <height>17</height>
         </rect>
@@ -1646,7 +1646,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>280</y>
+         <y>260</y>
          <width>41</width>
          <height>17</height>
         </rect>
@@ -1659,7 +1659,7 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>210</x>
-         <y>280</y>
+         <y>260</y>
          <width>41</width>
          <height>17</height>
         </rect>
@@ -1672,13 +1672,52 @@ QRadioButton::indicator{
        <property name="geometry">
         <rect>
          <x>270</x>
-         <y>300</y>
+         <y>280</y>
          <width>21</width>
          <height>17</height>
         </rect>
        </property>
        <property name="text">
         <string>q6</string>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QGroupBox" name="armGbPredefined">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>310</y>
+        <width>661</width>
+        <height>61</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Predefined</string>
+      </property>
+      <widget class="QPushButton" name="armBtnHome">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>20</y>
+         <width>88</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Home</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="armBtnNavigate">
+       <property name="geometry">
+        <rect>
+         <x>110</x>
+         <y>20</y>
+         <width>88</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Navigate</string>
        </property>
       </widget>
      </widget>

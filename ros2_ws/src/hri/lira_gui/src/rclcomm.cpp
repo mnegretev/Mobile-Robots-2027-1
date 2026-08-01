@@ -153,7 +153,7 @@ bool RclComm::call_ik_pose2pose(double x, double y, double z, double roll, doubl
     if (success)
     {
 	Q = response.get()->q;
-	RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "LiraGUI.->IK solved successfully");
+	//RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "LiraGUI.->IK solved successfully");
     } else {
 	RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "LiraGUI.->Cannot solve IK :'(");
     }

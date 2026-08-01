@@ -23,7 +23,8 @@ def generate_launch_description():
     lira_gui_node = Node(
         name='lira_gui',
         package='lira_gui',
-        executable='lira_gui_node'
+        executable='lira_gui_node',
+        parameters=[{'use_sim_time':True}]
     )
     rviz2_node = Node(
         package='rviz2',

@@ -49,12 +49,15 @@ MainWindow::MainWindow(QWidget *parent)
     QObject::connect(ui->armBtnPitchm, SIGNAL(pressed()), this, SLOT(armBtnPitchmPressed()));
     QObject::connect(ui->armBtnYawp, SIGNAL(pressed()), this, SLOT(armBtnYawpPressed()));
     QObject::connect(ui->armBtnYawm, SIGNAL(pressed()), this, SLOT(armBtnYawmPressed()));
+    QObject::connect(ui->armBtnHome, SIGNAL(pressed()), this, SLOT(armBtnHomePressed()));
+    QObject::connect(ui->armBtnNavigate, SIGNAL(pressed()), SLOT(armBtnNavigatePressed()));
     QObject::connect(ui->armTxtCartesianGoal, SIGNAL(returnPressed()), this, SLOT(armTxtCartesianGoalReturnPressed()));
 
     ros_timer = new QTimer(this);
     QObject::connect(ros_timer, &QTimer::timeout, this, &MainWindow::processRosMessages);
-    ros_timer->start(100);
+    ros_timer->start(20);
     this->updating_arm_q_controls = false;
+    this->timer_counter = 0;
 }
 
 MainWindow::~MainWindow()
@@ -291,6 +294,9 @@ void MainWindow::change_cartesian(std::vector<double> delta_X){
     if(this->commNode->call_ik_pose2pose(x, y, z, roll, pitch, yaw, Q)){
 	this->commNode->publish_arm_joint_traj(Q);
 	this->update_arm_q_controls(Q);
+	QString s = QString::number(x,'f',2) + " " + QString::number(y,'f',2) + " " + QString::number(z,'f',2) + " ";
+	s += QString::number(roll,'f',2) + " " + QString::number(pitch,'f',2) + " " + QString::number(yaw,'f',2);
+	this->ui->armTxtCartesianGoal->setText(s);
     }
 }
 
@@ -366,6 +372,16 @@ void MainWindow::armBtnYawmPressed()
     this->change_cartesian(delta_X);
 }
 
+void MainWindow::armBtnHomePressed(){
+    std::vector<double> Q = {0,0,0,0,0,0};
+    this->commNode->publish_arm_joint_traj(Q);
+}
+
+void MainWindow::armBtnNavigatePressed(){
+    std::vector<double> Q = {0.00, -1.66, -0.72, 0.00, 1.17, 0.00};
+    this->commNode->publish_arm_joint_traj(Q);
+}
+
 void MainWindow::arm_get_IK_and_update_ui(std::vector<double> cartesian)
 {
 }
@@ -387,21 +403,25 @@ void MainWindow::processRosMessages() {
   this->ui->armLblCurrentQ4->setText(QString::number(this->commNode->current_arm_joints[3], 'f',3));
   this->ui->armLblCurrentQ5->setText(QString::number(this->commNode->current_arm_joints[4], 'f',3));
   this->ui->armLblCurrentQ6->setText(QString::number(this->commNode->current_arm_joints[5], 'f',3));
-  double x, y, z, roll, pitch, yaw;
-  if(this->commNode->call_fwd_kinematics(this->commNode->current_arm_joints, x, y, z, roll, pitch, yaw)){
-      this->ui->armLblCurrentX->setText(QString::number(x, 'f', 3));
-      this->ui->armLblCurrentY->setText(QString::number(y, 'f', 3));
-      this->ui->armLblCurrentZ->setText(QString::number(z, 'f', 3));
-      this->ui->armLblCurrentRoll->setText(QString::number(roll, 'f', 3));
-      this->ui->armLblCurrentPitch->setText(QString::number(pitch, 'f', 3));
-      this->ui->armLblCurrentYaw->setText(QString::number(yaw, 'f', 3));
-  }else{
-      this->ui->armLblCurrentX->setText("NaN");
-      this->ui->armLblCurrentY->setText("NaN");
-      this->ui->armLblCurrentZ->setText("NaN");
-      this->ui->armLblCurrentRoll->setText("NaN");
-      this->ui->armLblCurrentPitch->setText("NaN");
-      this->ui->armLblCurrentYaw->setText("NaN");
+
+  this->timer_counter = (this->timer_counter + 1)%20;
+  if(this->timer_counter == 0){
+      double x, y, z, roll, pitch, yaw;
+      if(this->commNode->call_fwd_kinematics(this->commNode->current_arm_joints, x, y, z, roll, pitch, yaw)){
+	  this->ui->armLblCurrentX->setText(QString::number(x, 'f', 3));
+	  this->ui->armLblCurrentY->setText(QString::number(y, 'f', 3));
+	  this->ui->armLblCurrentZ->setText(QString::number(z, 'f', 3));
+	  this->ui->armLblCurrentRoll->setText(QString::number(roll, 'f', 3));
+	  this->ui->armLblCurrentPitch->setText(QString::number(pitch, 'f', 3));
+	  this->ui->armLblCurrentYaw->setText(QString::number(yaw, 'f', 3));
+      }else{
+	  this->ui->armLblCurrentX->setText("NaN");
+	  this->ui->armLblCurrentY->setText("NaN");
+	  this->ui->armLblCurrentZ->setText("NaN");
+	  this->ui->armLblCurrentRoll->setText("NaN");
+	  this->ui->armLblCurrentPitch->setText("NaN");
+	  this->ui->armLblCurrentYaw->setText("NaN");
+      }
   }
   if(!rclcpp::ok())
     QApplication::quit();
