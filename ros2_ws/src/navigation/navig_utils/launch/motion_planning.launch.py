@@ -63,35 +63,35 @@ def generate_launch_description():
     )
     cost_map_node = Node(
         package="mapping",
-        executable="cost_map_solved",
+        executable="cost_map",
         name='cost_map',
         output='screen',
         parameters=[{'inflation_radius':0.2}, {'cost_radius':0.5}]
     )
     a_star_node = Node(
         package="path_planner",
-        executable="a_star_solved",
+        executable="a_star",
         name='a_star',
         output='screen',
         parameters=[{'diagonals':True}]
     )
     path_smoothing_node = Node(
         package="path_planner",
-        executable="path_smoothing_solved",
+        executable="path_smoothing",
         name='path_smoothing',
         output='screen',
         parameters=[{'w1':0.95}, {'w2':0.05}]
     )
     pure_pursuit_node = Node(
         package="path_follower",
-        executable="pure_pursuit_solved",
+        executable="pure_pursuit",
         name='pure_pursuit',
         output='screen',
         parameters=[{'alpha':0.1}, {'beta':0.1}]
     )
     stanley_node = Node(
         package="path_follower",
-        executable="stanley_solved",
+        executable="stanley",
         name='stanley',
         output='screen',
         parameters=[{'Kd':1.0}, {'Ka':1.0}]

@@ -375,11 +375,13 @@ void MainWindow::armBtnYawmPressed()
 void MainWindow::armBtnHomePressed(){
     std::vector<double> Q = {0,0,0,0,0,0};
     this->commNode->publish_arm_joint_traj(Q);
+    this->update_arm_q_controls(Q);
 }
 
 void MainWindow::armBtnNavigatePressed(){
     std::vector<double> Q = {0.00, -1.66, -0.72, 0.00, 1.17, 0.00};
     this->commNode->publish_arm_joint_traj(Q);
+    this->update_arm_q_controls(Q);
 }
 
 void MainWindow::arm_get_IK_and_update_ui(std::vector<double> cartesian)
