@@ -1,0 +1,3 @@
+Download models from 
+https://huggingface.co/rhasspy/piper-voices/tree/main/es/es_MX/claude/high
+to this folder and set name accordingly in the pipertts.py node

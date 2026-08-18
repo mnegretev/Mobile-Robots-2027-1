@@ -1,0 +1,67 @@
+#ifndef RCLCOMM_H
+#define RCLCOMM_H
+#include <QObject>
+#include <QThread>
+#include <iostream>
+#include "rclcpp/rclcpp.hpp"
+#include "std_msgs/msg/float32_multi_array.hpp"
+#include "std_msgs/msg/float32.hpp"
+#include "std_msgs/msg/string.hpp"
+#include "nav_msgs/srv/get_plan.hpp"
+#include "nav_msgs/msg/path.hpp"
+#include "manip_msgs/srv/inverse_kinematics_pose2_pose.hpp"
+#include "manip_msgs/srv/forward_kinematics.hpp"
+#include "geometry_msgs/msg/twist.hpp"
+#include "sensor_msgs/msg/joint_state.hpp"
+#include "trajectory_msgs/msg/joint_trajectory.hpp"
+#include "trajectory_msgs/msg/joint_trajectory_point.hpp"
+#include "sensor_msgs/msg/image.hpp"
+#include "sensor_msgs/msg/point_cloud2.hpp"
+#include "pumas_vision_msgs/srv/recognize_object.hpp"
+#include "pumas_vision_msgs/srv/recognize_objects.hpp"
+
+class RclComm : public QThread, rclcpp::Node
+{
+    Q_OBJECT
+public:
+    RclComm();
+
+    std::vector<double> current_arm_joints;
+
+    void spin_some();
+    void publish_cmd_vel(double linear_x, double linear_y, double angular);
+    void publish_cmd_vel(double linear_x, double angular);
+    void start_publishing_cmd_vel(double linear_x, double linear_y, double angular);
+    void start_publishing_cmd_vel(double linear_x, double angular);
+    void stop_publishing_cmd_vel();
+    bool call_plan_path(double start_x, double start_y, double goal_x, double goal_y, nav_msgs::msg::Path& path);
+    void publish_arm_joint_traj(std::vector<double> Q);
+    bool call_ik_pose2pose(double x, double y, double z, double roll, double pitch, double yaw, std::vector<double>& Q);
+    bool call_fwd_kinematics(std::vector<double>& Q, double& x, double& y, double& z, double& roll, double& pitch, double& yaw);
+    bool call_recog_obj(std::string id);
+    bool call_recog_objs(std::vector<std::string>& results);
+    void publish_tts_query(std::string txt);
+
+private:
+    bool _publishing_cmd_vel;
+    geometry_msgs::msg::Twist _cmd_vel;
+    rclcpp::TimerBase::SharedPtr _timer;
+  
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr _pub_cmd_vel;
+    rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr _pub_traj;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _pub_tts_query;
+    rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr _sub_joint_states;
+
+    rclcpp::Client<nav_msgs::srv::GetPlan>::SharedPtr _clt_plan_path;
+    rclcpp::Client<manip_msgs::srv::InverseKinematicsPose2Pose>::SharedPtr _clt_ik_pose2pose;
+    rclcpp::Client<manip_msgs::srv::ForwardKinematics>::SharedPtr _clt_fwd_kinematics;
+    rclcpp::Client<pumas_vision_msgs::srv::RecognizeObject>::SharedPtr _clt_recog_obj;
+    rclcpp::Client<pumas_vision_msgs::srv::RecognizeObjects>::SharedPtr _clt_recog_objs;
+
+    void timer_callback();
+    void callback_joint_states(const sensor_msgs::msg::JointState &msg);
+    
+signals:
+    //void emitTopicData(QString);
+};
+#endif // RCLCOMM_H

@@ -1,0 +1,6 @@
+sensor_msgs/Image img_bgr
+sensor_msgs/Image img_depth
+sensor_msgs/PointCloud2 cloud
+string id
+---
+pumas_vision_msgs/VisionObject obj

@@ -1,0 +1,5 @@
+sensor_msgs/Image img_bgr
+sensor_msgs/Image img_depth
+sensor_msgs/PointCloud2 cloud
+---
+pumas_vision_msgs/VisionObject[] objs
