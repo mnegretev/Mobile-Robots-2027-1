@@ -1,0 +1,11 @@
+*~
+*.pyc
+*.user
+#*#
+*.bkp
+build/
+install/
+log/
+*MUJOCO_LOG.TXT
+PushAllChanges.py
+venv/

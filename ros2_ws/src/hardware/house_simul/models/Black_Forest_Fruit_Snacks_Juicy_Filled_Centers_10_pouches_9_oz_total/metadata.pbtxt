@@ -1,0 +1,35 @@
+model {
+  file: "model.sdf"
+}
+name: "Black_Forest_Fruit_Snacks_Juicy_Filled_Centers_10_pouches_9_oz_total"
+description: "Black Forest Fruit Snacks, Juicy Filled Centers - 10 pouches, 9 oz total"
+version: 1
+authors {
+  name: "Google"
+  email: "scanned-objects@google.com"
+}
+legal {
+  copyright: "Copyright 2020 Google LLC."
+  license: "Creative Commons Attribution 4.0 International"
+}
+annotations {
+  key: "brand"
+  value: "Black"
+}
+annotations {
+  key: "gtin"
+  value: "00041420182143"
+}
+annotations {
+  key: "sku"
+  value: "00041420182143"
+}
+compatibilities {
+  name: "Gazebo"
+  version {
+    major: 11
+  }
+}
+categories {
+  first: "Consumer Goods"
+}

@@ -1,0 +1,28 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <model name="aws_robomaker_residential_Trash_01">
+    <link name="link">
+
+      <collision name="collision">
+        <geometry>
+          <mesh>
+            <uri>model://aws_robomaker_residential_Trash_01/meshes/aws_Trash_01_collision.DAE</uri>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+
+        <!-- <pose frame=''>0.0 0 -0.3 0 -0 0</pose> -->
+      </collision>
+
+      <visual name="visual">
+	<geometry>
+          <mesh>
+            <uri>model://aws_robomaker_residential_Trash_01/meshes/aws_Trash_01_visual.DAE</uri>
+          </mesh>
+        </geometry>
+        <meta> <layer> 1 </layer></meta>
+      </visual>
+    </link>
+    <static>true</static>
+  </model>
+</sdf>

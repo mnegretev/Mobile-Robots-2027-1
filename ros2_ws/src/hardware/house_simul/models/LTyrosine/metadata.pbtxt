@@ -1,0 +1,39 @@
+model {
+  file: "model.sdf"
+}
+name: "LTyrosine"
+description: "L-Tyrosine"
+version: 1
+authors {
+  name: "Google"
+  email: "scanned-objects@google.com"
+}
+legal {
+  copyright: "Copyright 2020 Google LLC."
+  license: "Creative Commons Attribution 4.0 International"
+}
+annotations {
+  key: "brand"
+  value: "Jarrow Formulas"
+}
+annotations {
+  key: "gtin"
+  value: "790011150015"
+}
+annotations {
+  key: "mpn"
+  value: "790011150015"
+}
+annotations {
+  key: "sku"
+  value: "LTS"
+}
+compatibilities {
+  name: "Gazebo"
+  version {
+    major: 11
+  }
+}
+categories {
+  first: "Bottles and Cans and Cups"
+}
