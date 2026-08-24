@@ -9,6 +9,7 @@
 #include "std_msgs/msg/string.hpp"
 #include "nav_msgs/srv/get_plan.hpp"
 #include "nav_msgs/msg/path.hpp"
+#include "navig_msgs/srv/process_path.hpp"
 #include "manip_msgs/srv/inverse_kinematics_pose2_pose.hpp"
 #include "manip_msgs/srv/forward_kinematics.hpp"
 #include "geometry_msgs/msg/twist.hpp"
@@ -35,6 +36,7 @@ public:
     void start_publishing_cmd_vel(double linear_x, double angular);
     void stop_publishing_cmd_vel();
     bool call_plan_path(double start_x, double start_y, double goal_x, double goal_y, nav_msgs::msg::Path& path);
+    bool call_smooth_path(nav_msgs::msg::Path& path, nav_msgs::msg::Path& smooth_path);
     void publish_arm_joint_traj(std::vector<double> Q);
     bool call_ik_pose2pose(double x, double y, double z, double roll, double pitch, double yaw, std::vector<double>& Q);
     bool call_fwd_kinematics(std::vector<double>& Q, double& x, double& y, double& z, double& roll, double& pitch, double& yaw);
@@ -53,6 +55,7 @@ private:
     rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr _sub_joint_states;
 
     rclcpp::Client<nav_msgs::srv::GetPlan>::SharedPtr _clt_plan_path;
+    rclcpp::Client<navig_msgs::srv::ProcessPath>::SharedPtr _clt_smooth_path;
     rclcpp::Client<manip_msgs::srv::InverseKinematicsPose2Pose>::SharedPtr _clt_ik_pose2pose;
     rclcpp::Client<manip_msgs::srv::ForwardKinematics>::SharedPtr _clt_fwd_kinematics;
     rclcpp::Client<pumas_vision_msgs::srv::RecognizeObject>::SharedPtr _clt_recog_obj;
