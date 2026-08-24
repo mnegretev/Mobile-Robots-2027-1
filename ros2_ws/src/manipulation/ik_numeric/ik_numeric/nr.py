@@ -1,5 +1,5 @@
 #
-# MOBILE ROBOTS - FI-UNAM, 2026-2
+# MOBILE ROBOTS - FI-UNAM, 2027-1
 # INVERSE KINEMATICS BY NEWTON-RAPHSON
 #
 # Instructions:
@@ -57,10 +57,8 @@ Hs = [numpy.asarray(H0), numpy.asarray(H1), numpy.asarray(H2),
 class IKNewtonRaphsonNode(Node):
     def matrix_to_euler_xyz(self, R):
         # Calculate pitch (sy)
-        sy = numpy.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
-    
+        sy = numpy.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0]) 
         singular = sy < 1e-6 # Check for gimbal lock
-    
         if not singular:
             x = numpy.arctan2(R[2, 1], R[2, 2])
             y = numpy.arctan2(-R[2, 0], sy)
@@ -74,6 +72,8 @@ class IKNewtonRaphsonNode(Node):
         return x,y,z
 
     def forward_kinematics(self, Q):
+        H = numpy.identity(4)
+        R,P,Y = 0,0,0
         #
         # TODO:
         # Calculate the forward kinematics given the set of six angles 'q'
@@ -87,19 +87,8 @@ class IKNewtonRaphsonNode(Node):
         #     Get RPY from the resulting H
         #     Get xyz from the resulting H
         #
-        H =  numpy.identity(4)
-        #print(Q)
-        for i in range(6):
-            R = numpy.asarray([[numpy.cos(Q[i]), -numpy.sin(Q[i]), 0, 0],
-                               [numpy.sin(Q[i]),  numpy.cos(Q[i]), 0, 0],
-                               [0,0,1,0],
-                               [0,0,0,1]])
-            #print(R)
-            H = H @ Hs[i] @ R
-        H = H @ Hs[6]
-        R,P,Y = self.matrix_to_euler_xyz(H)
-        x,y,z = H[0,3], H[1,3], H[2,3]
-        return numpy.asarray([x, y, z, R, P, Y])
+        
+        return numpy.asarray([H[0,3], H[1,3], H[2,3], R, P, Y])
 
     def jacobian(self, Q):
         delta_q = 0.000001
@@ -123,17 +112,14 @@ class IKNewtonRaphsonNode(Node):
         #           i-th column of J = ( FK(i-th row of q_next) - FK(i-th row of q_prev) ) / (2*delta_q)
         #     RETURN J
         #
-        qn = numpy.asarray([Q,]*len(Q)) + numpy.identity(len(Q))*delta_q
-        qp = numpy.asarray([Q,]*len(Q)) - numpy.identity(len(Q))*delta_q
-        for i in range(6):
-            J[:,i] = (self.forward_kinematics(qn[i]) - self.forward_kinematics(qp[i]))/(2.0*delta_q)
+        
         return J
         
     def inverse_kinematics(self, Xd, init_guess=numpy.zeros(7), max_iter=2000):
         Xd= numpy.asarray(Xd)
         Q = init_guess
         iterations = 0
-
+        success = False
         #
         # TODO:
         # Solve the IK problem given a desired configuration.
@@ -154,18 +140,7 @@ class IKNewtonRaphsonNode(Node):
         #    Set success if maximum iterations were not exceeded
         #    Return success and calculated Q
         #
-        tol = 0.000001
-        X = self.forward_kinematics(Q)
-        e = X - Xd
-        e[3:6] = (e[3:6] + math.pi)%(2*math.pi) - math.pi
-        while numpy.linalg.norm(e)  > tol and iterations < max_iter:
-            J = self.jacobian(Q)
-            Q = (Q - numpy.linalg.pinv(J) @ e + math.pi)%(2*math.pi) - math.pi
-            X = self.forward_kinematics(Q)
-            e = X - Xd
-            e[3:6] = (e[3:6] + math.pi)%(2*math.pi) - math.pi
-            iterations += 1
-        success = iterations < max_iter
+        
         if success:
             self.get_logger().info("IK solved after " + str(iterations) + " steps. Q=" + str(Q))
         else:
@@ -179,17 +154,23 @@ class IKNewtonRaphsonNode(Node):
         success, Q = self.inverse_kinematics(Xd, req.initial_guess, N)
         resp.q = Q if success else []
         return resp
+
+    def callback_forward_kinematics(self, req, resp):
+        X = self.forward_kinematics(req.q)
+        resp.x, resp.y, resp.z = X[0], X[1], X[2]
+        resp.roll, resp.pitch, resp.yaw = X[3], X[4], X[5]
+        return resp
     
     def __init__(self):
         super().__init__("inverse_kinematics")
         self.get_logger().info("INITIALIZING INVERSE KINEMATICS BY NEWTON-RAPHSON NODE - " + NAME)
         self.declare_parameter('N', 100)
-        self.srv_smooth_path = self.create_service(InverseKinematicsPose2Pose, '/manipulation/ik_pose2pose', self.callback_ik_pose2pose)
+        self.srv_ik = self.create_service(InverseKinematicsPose2Pose, '/manipulation/ik_pose2pose', self.callback_ik_pose2pose)
+        self.srv_fk = self.create_service(ForwardKinematics, '/manipulation/forward_kinematics', self.callback_forward_kinematics)
 
 def main(args=None):
     rclpy.init(args=args)
     ik_node = IKNewtonRaphsonNode()
-    print(ik_node.forward_kinematics([0, -0.5, -1.4, 0,0.3,0]))
     rclpy.spin(ik_node)
     ik_node.destroy_node()
     rclpy.shutdown()
