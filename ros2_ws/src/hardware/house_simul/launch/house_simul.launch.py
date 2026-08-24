@@ -37,8 +37,8 @@ def launch_setup(context, *args, **kwargs):
     add_bio_gripper = LaunchConfiguration('add_bio_gripper', default=False)
     #add_realsense_d435i = LaunchConfiguration('add_realsense_d435i', default=True)
     #add_d435i_links = LaunchConfiguration('add_d435i_links', default=True)
-    add_realsense_d435i = LaunchConfiguration('realsense', default=True)
-    add_d435i_links = LaunchConfiguration('realsense', default=True)
+    add_realsense_d435i = LaunchConfiguration('realsense', default=False)
+    add_d435i_links = LaunchConfiguration('realsense', default=False)
     ros_namespace = LaunchConfiguration('ros_namespace', default='').perform(context)
 
     ros2_control_plugin = 'gz_ros2_control/GazeboSimSystem'

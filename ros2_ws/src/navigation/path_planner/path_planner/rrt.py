@@ -1,5 +1,5 @@
 #
-# MOBILE ROBOTS - FI-UNAM, 2026-2
+# MOBILE ROBOTS - FI-UNAM, 2027-1
 # RAPIDLY EXPLORING RANDOM TREES
 #
 # Instructions:
@@ -90,8 +90,21 @@ class RRTNode(Node):
         # The tree is already created with the corresponding starting node.
         # Goal node is also already created.
         # Return both, the tree and the path. You can follow these steps:
+        # WHILE goal_node.parent is None and max_attempts is not exceeded:
+        #   get a random point [x,y] by calling the get_random function
+        #   get the nearest node in the tree to the point x,y
+        #   get a valid node (node no farther than epsilon) by calling the get_new_node function
+        #   if there is no collision from new_node to nearest_node:
+        #     add new_node to the children of nearest node
+        #     if there is no collision from new node to goal node:
+        #       add goal node to the children of new_node
+        #       set new node as parent of goal node
+        #   increment attempts
         #
         
+        #
+        # END OF TODO
+        #
         path = []
         while goal_node is not None:
             path.insert(0, [goal_node.x, goal_node.y])
@@ -134,7 +147,7 @@ class RRTNode(Node):
         [sx, sy] = [req.start.pose.position.x, req.start.pose.position.y]
         [gx, gy] = [req.goal .pose.position.x, req.goal .pose.position.y]
         epsilon  = self.get_parameter('epsilon').get_parameter_value().double_value
-        max_attempts = self.get_parameter('max_n').get_parameter_value().integer_value
+        max_attempts = self.get_parameter('N').get_parameter_value().integer_value
         str_data = str([sx,sy]) + " to " + str([gx,gy]) +" with e=" + str(epsilon) +  " and " + str(max_attempts) + " attempts."
         self.get_logger().info("Planning by RRT from " + str_data)
         
@@ -143,7 +156,7 @@ class RRTNode(Node):
         end_time   = self.get_clock().now()
         
         delta_ms = (end_time.nanoseconds - start_time.nanoseconds)/1e6
-        if len(path) > 0:
+        if len(path) > 1:
             self.get_logger().info("Path planned after " + str(delta_ms) + " ms")
         else:
             self.get_logger().info("Cannot plan path from  " + str([sx, sy])+" to "+str([gx, gy]) + " :'(")
@@ -176,7 +189,7 @@ class RRTNode(Node):
         self.get_logger().info("Inflated map service is now available...")
         self.grid_map = self.get_inflated_map()
         self.declare_parameter('epsilon', 1.0)
-        self.declare_parameter('max_n', 100)
+        self.declare_parameter('N', 100)
         self.srv_plan_path = self.create_service(GetPlan, '/path_planning/plan_path', self.callback_rrt)
         self.pub_path = self.create_publisher(Path, '/path_planning/path', 10)
         self.pub_tree = self.create_publisher(Marker, '/path_planning/rrt_tree', 10)
