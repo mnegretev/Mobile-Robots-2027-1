@@ -2,10 +2,9 @@
  * MOBILE ROBOTS - FI-UNAM, 2027-1
  * CLUSTERING BY K-MEANS
  * Instructions:
- *
- *
- *
- *
+ * Write the code necessary to implement the K-means algorithm to cluster a map
+ * given an occupancy grid and a number of centroids K
+ * Modify only the sections with the TODO comment
  */
 
 #include <cstdio>
@@ -71,13 +70,16 @@ public:
 	RCLCPP_INFO(this->get_logger(), "Recalculating centroids");
 	std::vector<Eigen::Vector2d> new_centroids(centroids.size());	    
 	std::vector<int> counters(centroids.size());
-
 	/*
 	 * TODO:
-	 * Recalculate centroids given the current centroids and the set of points
-	 * Return the new_centroids. Use the already declared variables
+	 * Implement the steps to recalculate centroids.
+	 * Use as reference the python version of this algorithm.
+	 * Use the declared variables and the Eigen library
 	 */
 	
+	/*
+	 * END OF TODO
+	 */
 	return new_centroids;
     }
 
@@ -101,8 +103,6 @@ public:
 	    p.y = centroids[i][1];
 	    mrk.points.push_back(p);
 	}
-	    //mrk.scale.x, mrk.scale.y, mrk.scale.z = 0.2, 0.2, 0.2
-	    //mrk.color.r, mrk.color.a = 1.0, 1.0*/
 	return mrk;
     }
 
@@ -144,15 +144,18 @@ public:
 	    pub_marker->publish(mrk);
 	    rclcpp::spin_some(this->get_node_base_interface());
 	    rclcpp::sleep_for(std::chrono::milliseconds(100));
-
 	    /*
 	     * TODO:
-	     * Recalcualte centroids until max_dist is less than tolerance
+	     * Recalculate centroids
+	     * Get the maximum distance between each centroids and is corresponding new centroid
+	     * Use as reference the python version of this algorithm.
+	     * Use the declared variables and the Eigen library
 	     */
-
+	    
 	    /*
 	     * END OF TODO
 	     */
+	    RCLCPP_INFO(this->get_logger(), "Max change in centroids: %lf", max_dist);
 	    mrk = get_centroids_marker(centroids);
 	}
     }

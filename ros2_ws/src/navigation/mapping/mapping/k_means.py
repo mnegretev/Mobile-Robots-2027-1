@@ -3,7 +3,9 @@
 # CLUSTERING BY K-MEANS
 #
 # Instructions:
-# 
+# Write the code necessary to cluster a map by K-means,
+# given an occupancy grid and a number K.
+# Modify only the sections marked with the TODO comment
 #
 
 import rclpy
@@ -38,33 +40,40 @@ class KMeansNode(Node):
         counters = numpy.zeros((len(centroids), 1))
         new_centroids = numpy.zeros(centroids.shape)
         #
-        # TODO:
-        # Recalculate centroids
+        # TODO
+        # Recalculate all centroids.
+        # For each point p in points:
+        #   Get the neartes centroid to each point p
+        #   Add the point p to the corresponding new centroid
+        #   Increment the correspoinding counter by one
+        # Get the new centroids by averaging all added points to each new centroid
         #
+        
+        #
+        # END OF TODO
+        #
+        new_centroids = numpy.asarray(new_centroids)
         return new_centroids
             
 
     def k_means(self, P, K, static_map, tol):
         self.get_logger().info("Clustering " + str(len(P)) + "points with " + str(K) + " centroids")
-        
         centroids = self.generate_random_centroids(K, -5, -5, 5, 5, static_map)
         self.pub_centroids.publish(self.get_centroids_marker(centroids))
-
+        max_distance = float("inf")
+        iterations = 0
         #
         # TODO:
-        # Write the code to cluster P by K-means
-        # P are the set of points to be clustered, K is the number of centroids,
-        # static_map is the occupancy grid used to generate the first random centroids in the free space
-        # tol is the tolerance to consider that the centroids have converged
+        # Implement the K-means clustering algorithm
+        # While max_distance > tol
+        #   Recalculate centroids
+        #   Get the maximum distance between each new centroid and its corresponding previous centroid
         #
-        max_distance = float("inf")
-        while max_distance > tol:
-            self.get_logger().info("Recalculating centroids")
-            new_centroids = self.recalculate_centroids(centroids, P)
-            max_distance = numpy.max([numpy.linalg.norm(centroids[i] - new_centroids[i]) for i in range(len(centroids))])
-            centroids = new_centroids
-            self.pub_centroids.publish(self.get_centroids_marker(centroids))
-        self.get_logger().info("Converged K centroids after")
+        
+        #
+        # END OF TODO
+        #
+        self.get_logger().info(f"Converged K centroids after {iterations} iterations")
     
     def __init__(self):
         super().__init__("k_means_node")

@@ -1,11 +1,12 @@
 #
-# MOBILE ROBOTS - FI-UNAM, 2026-2
+# MOBILE ROBOTS - FI-UNAM, 2027-1
 # MAP INFLATION AND COST MAPS
 #
 # Instructions:
 # Write the code necesary to get a cost map given an occupancy grid map and a cost radius.
 # Complete the code necessary to inflate the obstacles given an occupancy grid map and
 # a number of cells to inflate.
+# Modify only the sections marked with the TODO comment
 #
 
 import rclpy
@@ -19,7 +20,8 @@ FULL_NAME = "FULL NAME"
 
 class CostMapNode(Node):
     def get_inflated_map(self, static_map, inflation_cells):
-        self.get_logger().debug("Inflating map by " + str(inflation_cells) + " cells")
+        inflation_cells = max(0,min(inflation_cells, 10))
+        self.get_logger().info("Inflating map by " + str(inflation_cells) + " cells")
         inflated = numpy.copy(static_map)
         [height, width] = static_map.shape
         #
@@ -29,11 +31,12 @@ class CostMapNode(Node):
         # Map is given in 'static_map' as a bidimensional numpy array.
         # Consider as occupied cells all cells with an occupation value greater than 50
         #
-        
+
         return inflated
     
     def get_cost_map(self, static_map, cost_radius):
-        self.get_logger().debug("Getting cost map with " + str(cost_radius) + " cells")
+        cost_radius = max(0,min(cost_radius, 10))
+        self.get_logger().info("Getting cost map with " + str(cost_radius) + " cells")
         cost_map = numpy.copy(static_map)
         [height, width] = static_map.shape
         #
@@ -54,35 +57,40 @@ class CostMapNode(Node):
         #  [ 3 X X 3 2 2]
         #  [ 3 X 3 3 3 2]
         #  [ 3 3 3 X 3 2]]
-        # Cost_radius indicate the number of cells around obstacles with costs greater than zero.
+        # Cost_radius indicates the number of cells around obstacles with costs greater than zero.
+        # Just for visualization purposes, the cost is multiplied by 4
         
         return cost_map
 
     def callback_inflated_map(self, request, response):
         response.map = self.inflated_map
         return response
-        
+    
     def callback_cost_map(self, request, response):
         response.map = self.cost_map
         return response
 
-    def callback_timer(self):
-        self.map_info   = self.map_static.info
-        self.map_width  = self.map_info.width
-        self.map_height = self.map_info.height
-        self.map_res    = self.map_info.resolution
-        self.map_data = numpy.reshape(numpy.asarray(self.map_static.data, dtype='int'), (self.map_height, self.map_width))
-        inflation_radius  = self.get_parameter('inflation_radius').get_parameter_value().double_value
-        inflated_map_data = self.get_inflated_map(self.map_data, round(inflation_radius/self.map_res))
-        inflated_map_data = numpy.ravel(numpy.reshape(inflated_map_data, (self.map_width*self.map_height, 1)))
+    def get_augmented_maps(self):
+        map_info   = self.map_static.info
+        map_width  = map_info.width
+        map_height = map_info.height
+        map_res    = map_info.resolution
+        
+        map_data = numpy.reshape(numpy.asarray(self.map_static.data, dtype='int'), (map_height, map_width))
+        inflation_radius = self.get_parameter('inflation_radius').get_parameter_value().double_value
         cost_radius  = self.get_parameter('cost_radius').get_parameter_value().double_value
-        cost_map_data = self.get_cost_map(self.map_data, round(cost_radius/self.map_res))
-        cost_map_data = numpy.ravel(numpy.reshape(cost_map_data, (self.map_width*self.map_height, 1)))
-        self.inflated_map = OccupancyGrid(info=self.map_info, data=inflated_map_data)
+        inflated_map_data = self.get_inflated_map(map_data, round(inflation_radius/map_res))
+        cost_map_data = self.get_cost_map(inflated_map_data, round(cost_radius/map_res))
+        
+        inflated_map_data = numpy.ravel(numpy.reshape(inflated_map_data, (map_width*map_height, 1)))
+        cost_map_data = numpy.ravel(numpy.reshape(cost_map_data, (map_width*map_height, 1)))
+        
+        self.inflated_map = OccupancyGrid(info=map_info, data=inflated_map_data)
         self.inflated_map.header.frame_id = "map"
         self.inflated_map.header.stamp = self.get_clock().now().to_msg()
         self.pub_inflated_map.publish(self.inflated_map)
-        self.cost_map = OccupancyGrid(info=self.map_info, data=cost_map_data)
+        
+        self.cost_map = OccupancyGrid(info=map_info, data=cost_map_data)
         self.cost_map.header.frame_id = "map"
         self.cost_map.header.stamp = self.get_clock().now().to_msg()
         self.pub_cost_map.publish(self.cost_map)
@@ -104,12 +112,11 @@ class CostMapNode(Node):
         self.get_logger().info("Got static map.")
         self.declare_parameter('inflation_radius', 0.05)
         self.declare_parameter('cost_radius', 0.05)
-        self.timer = self.create_timer(1.0, self.callback_timer)
-        self.get_clock().sleep_for(Duration(seconds=2.0))
-        self.srv_inflate_map  = self.create_service(GetMap, '/get_inflated_map', self.callback_inflated_map)
-        self.srv_cost_map  = self.create_service(GetMap, '/get_cost_map', self.callback_cost_map)
-        self.pub_inflated_map = self.create_publisher(OccupancyGrid, '/inflated_map', 10)
         self.pub_cost_map = self.create_publisher(OccupancyGrid, '/cost_map', 10)
+        self.pub_inflated_map = self.create_publisher(OccupancyGrid, '/inflated_map', 10)
+        self.get_augmented_maps()
+        self.srv_inflated_map  = self.create_service(GetMap, '/get_inflated_map', self.callback_inflated_map)
+        self.srv_cost_map  = self.create_service(GetMap, '/get_cost_map', self.callback_cost_map)
 
 
 def main(args=None):
