@@ -1,5 +1,5 @@
 #
-# MOBILE ROBOTS - FI-UNAM, 2026-2
+# MOBILE ROBOTS - FI-UNAM, 2027-1
 # PATH PLANNING BY A-STAR
 #
 # Instructions:
@@ -62,7 +62,7 @@ class AStarNode(Node):
         #             mark r,c as 'in_open_list'
         #             add r,c to open list (check heapq.heappush)
         #
-        
+
         #
         # END OF WHILE
         #
