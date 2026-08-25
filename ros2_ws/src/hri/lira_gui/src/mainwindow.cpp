@@ -172,7 +172,7 @@ void MainWindow::navBtnCalcPath_pressed()
     nav_msgs::msg::Path path, smooth_path;
     if(!commNode->call_plan_path(startX, startY, goalX, goalY, path))
         return;
-    //commNode->call_smooth_path(path, smooth_path);
+    commNode->call_smooth_path(path, smooth_path);
 }
 
 void MainWindow::navBtnExecPath_pressed()

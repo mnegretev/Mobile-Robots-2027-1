@@ -1,5 +1,5 @@
 #
-# MOBILE ROBOTS - FI-UNAM, 2026-2
+# MOBILE ROBOTS - FI-UNAM, 2027-1
 # PATH SMOOTHING BY GRADIENT DESCEND
 #
 # Instructions:
@@ -17,6 +17,10 @@ NAME = "FULL NAME"
 
 class PathSmoothingNode(Node):
     def smooth_path(self, Q, w1, w2, max_steps):
+        P = numpy.copy(Q)
+        tol     = 0.00001                   
+        nabla   = numpy.full(Q.shape, float("inf"))
+        epsilon = 0.1                       
         #
         # TODO:
         # Write the code to smooth the path Q, using the gradient descend algorithm,
@@ -26,11 +30,10 @@ class PathSmoothingNode(Node):
         # The smoothed path must have the same shape.
         # Return the smoothed path.
         #
-        P = numpy.copy(Q)
-        tol     = 0.00001                   
-        nabla   = numpy.full(Q.shape, float("inf"))
-        epsilon = 0.1                       
-        
+
+        #
+        # END OF TODO
+        #
         return P
 
     def callback_smooth_path(self, request, response):
