@@ -93,14 +93,14 @@ void mouse_move(GLFWwindow* window, double xpos, double ypos) {
     }
     
     // move camera
-    mjv_moveCamera(m, action, dx/height, dy/height, &scn, &cam);
+    mjv_moveCamera(m, action, dx/height, dy/height, &cam);
 }
 
 
 // scroll callback
 void scroll(GLFWwindow* window, double xoffset, double yoffset) {
     // emulate vertical mouse motion = 5% of window height
-    mjv_moveCamera(m, mjMOUSE_ZOOM, 0, -0.05*yoffset, &scn, &cam);
+    mjv_moveCamera(m, mjMOUSE_ZOOM, 0, -0.05*yoffset, &cam);
     //std::cout << yoffset << std::endl;
 }
 
@@ -182,7 +182,7 @@ int main(int argc, const char** argv) {
 
     // run main loop, target real-time simulation and 60 fps rendering
     int actuator_id = mj_name2id(m, mjOBJ_ACTUATOR, "AAHead_yaw");
-    mjv_moveCamera(m, mjMOUSE_ZOOM, 0, -0.05*5, &scn, &cam);
+    mjv_moveCamera(m, mjMOUSE_ZOOM, 0, -0.05*5, &cam);
     while (!glfwWindowShouldClose(window) && rclcpp::ok()) {
 	// advance interactive simulation for 1/60 sec
 	//  Assuming MuJoCo can simulate faster than real-time, which it usually can,
