@@ -7,6 +7,7 @@
 # Required publishers and subscribers are already declared and initialized.
 #
 
+import math
 import rclpy
 from rclpy.node import Node
 from rclpy.duration import Duration
@@ -32,6 +33,8 @@ class RosBasicsNode(Node):
         self.obstacle_front = False
         self.obstacle_left  = False
         self.obstacle_right = False
+        self.left_clearance  = float('inf')
+        self.right_clearance = float('inf')
         return
 
     def move(self, linear, angular, seconds):
@@ -44,7 +47,11 @@ class RosBasicsNode(Node):
             rclpy.spin_once(self, timeout_sec=0)
             self.get_clock().sleep_for(Duration(seconds=0.1))
             counter -= 1
-    
+
+    def _min_valid(self, ranges):
+        valid = [r for r in ranges if not math.isinf(r) and not math.isnan(r)]
+        return min(valid) if valid else float('inf')
+
     def spin(self):
         while rclpy.ok():
             #
@@ -54,15 +61,22 @@ class RosBasicsNode(Node):
             # If there is an obstacle on the right, then turn left
             # If there is an obstacle in front, then turn around
             #
-            if self.obstacle_left:
+            if self.obstacle_left and self.obstacle_right:
+                self.get_logger().info("Trapped: blocked both sides, backing up")
+                self.move(-0.3, 0.0, 1.5)
+            elif self.obstacle_front:
+                if self.left_clearance > self.right_clearance:
+                    self.get_logger().info("Obstacle in front, turning left (more clearance)")
+                    self.move(0, 0.78, 3.0)
+                else:
+                    self.get_logger().info("Obstacle in front, turning right (more clearance)")
+                    self.move(0, -0.78, 3.0)
+            elif self.obstacle_left:
                 self.get_logger().info("Obstacle on the left")
-                self.move(0, -0.78, 2.0)
+                self.move(0, -0.78, 1.5)
             elif self.obstacle_right:
                 self.get_logger().info("Obstacle on the right")
-                self.move(0, 0.78, 2.0)
-            elif self.obstacle_front:
-                self.get_logger().info("Obstacle in front")
-                self.move(0, 0.78, 4.0)
+                self.move(0, 0.78, 1.5)
             else:
                 self.get_logger().info("Moving forward")
                 self.move(0.5, 0.0, 0.5)
@@ -82,9 +96,20 @@ class RosBasicsNode(Node):
         # Check online documentation of LaserScan message
         #
         n = len(msg.ranges)
-        self.obstacle_left  = msg.ranges[n//2 + 100] < 1.0
-        self.obstacle_right = msg.ranges[n//2 - 100] < 1.0
-        self.obstacle_front = msg.ranges[n//2] < 1.0
+        front_sector = msg.ranges[n//2 - 20 : n//2 + 20]
+        left_sector  = msg.ranges[n//2 + 70 : n//2 + 130]
+        right_sector = msg.ranges[n//2 - 130 : n//2 - 70]
+
+        front_dist = self._min_valid(front_sector)
+        self.left_clearance  = self._min_valid(left_sector)
+        self.right_clearance = self._min_valid(right_sector)
+
+        self.obstacle_front = front_dist < 1.0
+        self.obstacle_left  = self.left_clearance < 1.0
+        self.obstacle_right = self.right_clearance < 1.0
+        #
+        # END OF TODO
+        #
         return
 
 
