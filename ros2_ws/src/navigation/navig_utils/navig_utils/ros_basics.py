@@ -13,7 +13,7 @@ from rclpy.duration import Duration
 from geometry_msgs.msg import Twist, PointStamped
 from sensor_msgs.msg import LaserScan
 
-FULL_NAME = "FULL NAME"
+FULL_NAME = "Medrano Solano Enrique"
 
 SM_INIT = 0
 SM_FORWARD = 10
@@ -54,6 +54,19 @@ class RosBasicsNode(Node):
             # If there is an obstacle on the right, then turn left
             # If there is an obstacle in front, then turn around
             #
+            if self.obstacle_front:
+                self.get_logger().info("Obstacle in the front")
+                self.move(0,1.0,1.0)
+            elif self.obstacle_right:
+                self.get_logger().info("Obstacle on the right")
+                self.move(0,0.8,1.0)
+            elif self.obstacle_left:
+                self.get_logger().info("Obstacle on the left")
+                self.move(0,0.8,1.0)
+            else:
+                self.get_logger().info("Moving forward")
+                self.move(0.4,0.0,0.5)
+
 
             #
             # END OF TODO
@@ -70,7 +83,22 @@ class RosBasicsNode(Node):
         # with True or False, accordingly.
         # Check online documentation of LaserScan message
         #
-        
+        n = len(msg.ranges)
+        vision = 40
+
+        def dist_min(laser_array):
+            valid_readings =[
+                r for r in laser_array
+                if msg.range_min <= r <= msg.range_max
+            ]
+
+            return min(valid_readings) if valid_readings else msg.range_max
+
+        self.obstacle_left = dist_min(msg.ranges[n//2 + 100 - vision : n//2 + 100 + vision ]) <1.2
+        self.obstacle_right = dist_min(msg.ranges[n//2 - 100 - vision : n//2 - 100 + vision]) <1.2
+        self.obstacle_front = dist_min(msg.ranges[n//2 - vision : n//2 + vision]) <1.0
+
+
         return
 
 
