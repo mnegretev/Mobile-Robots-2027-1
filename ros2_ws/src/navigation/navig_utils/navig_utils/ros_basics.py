@@ -13,7 +13,7 @@ from rclpy.duration import Duration
 from geometry_msgs.msg import Twist, PointStamped
 from sensor_msgs.msg import LaserScan
 
-FULL_NAME = "FULL NAME"
+FULL_NAME = "SOLORIO GONZALEZ ALDO BRUNO"
 
 SM_INIT = 0
 SM_FORWARD = 10
@@ -54,14 +54,45 @@ class RosBasicsNode(Node):
             # If there is an obstacle on the right, then turn left
             # If there is an obstacle in front, then turn around
             #
-
+            #move(Velocidad, Velocidad Angular, Tiempo [s])
+            if self.obstacle_left:
+                self.get_logger().info("Obstacle on the left")
+                self.move(0, -0.48, 0.50)
+            elif self.obstacle_right:
+                self.get_logger().info("Obstacle on the right")
+                self.move(0, 0.48, 0.50)
+            elif self.obstacle_front:
+                self.get_logger().info("Obstacle in front")
+                self.move(0, 0.48, 1.0)
+            else:
+                self.get_logger().info("Moving forward")
+                self.move(0.2, 0.0, 0.2)
             #
             # END OF TODO
             #
             rclpy.spin_once(self, timeout_sec=0)
             self.get_clock().sleep_for(Duration(seconds=0.1))
-            
+    
+    #Funcion propuesta
+    def get_representative_distance(self, ranges, range_min, range_max):
+        valid_ranges = sorted(
+            distance
+            for distance in ranges
+            if range_min <= distance <= range_max
+        )
+
+        if len(valid_ranges) == 0:
+            return float('inf')
+
+        five_smallest = valid_ranges[:5]
+
+        if max(five_smallest) - min(five_smallest) > 0.5:
+            return min(five_smallest)
+
+        return sum(five_smallest) / len(five_smallest)
+
     def callback_scan(self, msg):
+
         #
         # TODO:
         # Do something to detect if there is an obstacle in front of the robot,
@@ -70,7 +101,54 @@ class RosBasicsNode(Node):
         # with True or False, accordingly.
         # Check online documentation of LaserScan message
         #
-        
+
+        n = len(msg.ranges)
+
+        section = n // 8
+        half_section = section // 2
+        center = n // 2
+
+        front_start = center - half_section
+        front_end = front_start + section
+
+        left_start = front_end + section
+        left_end = left_start + section
+
+        right_end = front_start - section
+        right_start = right_end - section
+
+        front_ranges = msg.ranges[front_start:front_end]
+        left_ranges = msg.ranges[left_start:left_end]
+        right_ranges = msg.ranges[right_start:right_end]
+
+        front_distance = self.get_representative_distance(
+            front_ranges,
+            msg.range_min,
+            msg.range_max
+        )
+
+        left_distance = self.get_representative_distance(
+            left_ranges,
+            msg.range_min,
+            msg.range_max
+        )
+
+        right_distance = self.get_representative_distance(
+            right_ranges,
+            msg.range_min,
+            msg.range_max
+        )
+
+        self.obstacle_front = front_distance < 0.7
+        self.obstacle_left = left_distance < 0.7
+        self.obstacle_right = right_distance < 0.7
+
+        self.get_logger().info(
+            f"Distances: front={front_distance:.2f}, "
+            f"left={left_distance:.2f}, "
+            f"right={right_distance:.2f}"
+        )
+
         return
 
 
