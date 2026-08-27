@@ -55,13 +55,20 @@ class RosBasicsNode(Node):
             # If there is an obstacle in front, then turn around
             #
             if self.obstacle_front:
-                self.move(0.0, 1.0, 2.0)
+               self.get_logger().info("Front blocked - turning")
+               self.move(0.0, 0.78, 4.0)
+
             elif self.obstacle_left:
-                self.move(0.0, -1.0, 1.0)
+                 self.get_logger().info("Left side blocked - turning right")
+                 self.move(0.0, -0.78, 2.0)
+
             elif self.obstacle_right:
-                self.move(0.0, 1.0, 1.0)
+                 self.get_logger().info("Right side blocked - turning left")
+                 self.move(0.0, 0.78, 2.0)
+
             else:
-                self.move(0.2, 0.0, 0.1)
+                 self.get_logger().info("Path clear - moving forward")
+                 self.move(0.5, 0.0, 0.5)
             #
             # END OF TODO
             #
@@ -78,9 +85,17 @@ class RosBasicsNode(Node):
         # Check online documentation of LaserScan message
         #
         n = len(msg.ranges)
-        self.obstacle_left = msg.ranges[n//2 + 100] < 1.0
-        self.obstacle_right = msg.ranges[n//2 - 100] < 1.0
-        self.obstacle_front = msg.ranges[n//2] < 1.0
+        center = n // 2
+
+        safety_distance = 0.9
+
+        front_zone = msg.ranges[center - 25:center + 25]
+        left_zone = msg.ranges[center + 60:center + 115]
+        right_zone = msg.ranges[center - 115:center - 60]
+
+        self.obstacle_front = min(front_zone) < safety_distance
+        self.obstacle_left = min(left_zone) < safety_distance
+        self.obstacle_right = min(right_zone) < safety_distance
         return
 
 
