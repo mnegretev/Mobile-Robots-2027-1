@@ -51,11 +51,15 @@ def generate_launch_description():
             period=5.0,
             actions=[
                 Node(
-                    package='nav2_util',
-                    executable='lifecycle_bringup',
-                    name='lifecycle_bringup',
+                    package='nav2_lifecycle_manager',
+                    executable='lifecycle_manager',
+                    name='lifecycle_manager',
                     output='screen',
-                    arguments=['map_server', 'amcl']
+                    parameters=[
+                        {'autostart': True},
+                        {'node_names': ['map_server', 'amcl']},
+                        {'use_sim_time': True}
+                    ]
                 )
             ]
         )
