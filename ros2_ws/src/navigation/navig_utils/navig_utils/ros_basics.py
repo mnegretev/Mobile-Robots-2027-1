@@ -8,12 +8,13 @@
 #
 
 import rclpy
+import math
 from rclpy.node import Node
 from rclpy.duration import Duration
 from geometry_msgs.msg import Twist, PointStamped
 from sensor_msgs.msg import LaserScan
 
-FULL_NAME = "FULL NAME"
+FULL_NAME = "Perez Salazar Alfredo"
 
 SM_INIT = 0
 SM_FORWARD = 10
@@ -54,6 +55,24 @@ class RosBasicsNode(Node):
             # If there is an obstacle on the right, then turn left
             # If there is an obstacle in front, then turn around
             #
+            
+            if self.obstacle_front:
+                self.get_logger().info("Obstacle in front")
+                self.move(-0.2, 0, 0.3)
+                if self.dist_left > self.dist_right:
+                    self.move(0.0, 0.78, 1.0)
+                else:
+                    self.move(0, -0.78, 1.0)
+            elif self.obstacle_left:
+                self.get_logger().info("Obstacle on the left")
+                self.move(0, -0.6, 0.5)
+            elif self.obstacle_right:
+                self.get_logger().info("Obstacle on the right")
+                self.move(0, 0.6, 0.5)
+            
+            else:
+                self.get_logger().info("Moving forward")
+                self.move(0.5, 0.0, 0.5)
 
             #
             # END OF TODO
@@ -70,8 +89,32 @@ class RosBasicsNode(Node):
         # with True or False, accordingly.
         # Check online documentation of LaserScan message
         #
-        
-        return
+        n = len(msg.ranges)
+        #self.obstacle_left = msg.ranges[n//2 + 100] < 1.0
+        #self.obstacle_right = msg.ranges[n//2 - 100] < 1.0
+        #self.obstacle_front = msg.ranges[n//2] < 1.0
+        ventana_central = 40  # Ventana central 
+        ventana_lateral = 80   # Ventana para costados
+
+        def minima_distancia(start_idx, end_idx):
+            start_idx = max(0, start_idx)
+            end_idx = min(n, end_idx)
+            valid_ranges = [
+                r for r in msg.ranges[start_idx:end_idx]
+                if not math.isnan(r) and not math.isinf(r) and r >= msg.range_min
+            ]
+            return min(valid_ranges) if valid_ranges else float('inf')
+        centro = n // 2
+                    
+        self.dist_front = minima_distancia(centro - ventana_central, centro + ventana_central)
+        self.dist_left  = minima_distancia(centro + ventana_central, centro + ventana_central + ventana_lateral)
+        self.dist_right = minima_distancia(centro - ventana_central - ventana_lateral, centro - ventana_central)
+        umbral_frente = 0.6
+        umbral_lateral = 0.5
+
+        self.obstacle_front = self.dist_front < umbral_frente
+        self.obstacle_left  = self.dist_left < umbral_lateral
+        self.obstacle_right = self.dist_right < umbral_lateral
 
 
 def main(args=None):

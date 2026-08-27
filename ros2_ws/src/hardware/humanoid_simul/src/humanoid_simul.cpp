@@ -93,14 +93,18 @@ void mouse_move(GLFWwindow* window, double xpos, double ypos) {
     }
     
     // move camera
-    mjv_moveCamera(m, action, dx/height, dy/height, &cam);
+    if (m) {
+        mjv_moveCamera(m, action, dx/height, dy/height, &cam);
+    }
 }
 
 
 // scroll callback
 void scroll(GLFWwindow* window, double xoffset, double yoffset) {
     // emulate vertical mouse motion = 5% of window height
-    mjv_moveCamera(m, mjMOUSE_ZOOM, 0, -0.05*yoffset, &cam);
+    if (m) {
+        mjv_moveCamera(m, mjMOUSE_ZOOM, 0, -0.05*yoffset, &cam);
+    }
     //std::cout << yoffset << std::endl;
 }
 
@@ -131,93 +135,114 @@ void print_qpos(const mjModel* m, const mjData* d) {
 }
 
 // main function
-int main(int argc, const char** argv) {
+int main(int argc, char** argv){
     rclcpp::init(argc, argv);
     HumanoidSimulNode n;
     RCLCPP_INFO_STREAM(n.get_logger(), "Model file: " << n.model_file);
     rclcpp::Rate rate(std::chrono::milliseconds(33));
     
-    // load and compile model
+    // Cargar y compilar modelo
     char error[1000] = "Could not load binary model";
-    if(n.model_file.compare(n.model_file.size() - 4, 4, ".mjb") == 0){
-	//if (std::strlen(argv[1])>4 && !std::strcmp(argv[1]+std::strlen(argv[1])-4, ".mjb")) {
-	m = mj_loadModel(n.model_file.c_str(), 0);
+    if (n.model_file.size() >= 4 && n.model_file.compare(n.model_file.size() - 4, 4, ".mjb") == 0) {
+        m = mj_loadModel(n.model_file.c_str(), 0);
     } else {
-	m = mj_loadXML(n.model_file.c_str(), 0, error, 1000);
+        m = mj_loadXML(n.model_file.c_str(), 0, error, 1000);
+
+        if (!m) {
+            RCLCPP_ERROR(n.get_logger(), "Error al cargar el archivo XML: %s", error);
+            rclcpp::shutdown();
+            return -1;
+        }
     }
+
+    // Validar que el modelo haya cargado correctamente
     if (!m) {
-	mju_error("Load model error: %s", error);
-	return -1;
+        RCLCPP_ERROR(n.get_logger(), "Error al cargar el modelo MuJoCo: %s", error);
+        rclcpp::shutdown();
+        return EXIT_FAILURE;
     }
-    print_joint_list(m);
     
-    // make data
+    print_joint_list(m);
     d = mj_makeData(m);
     
-    // init GLFW
     if (!glfwInit()) {
-	mju_error("Could not initialize GLFW");
+        mju_error("Could not initialize GLFW");
     }
     
-    // create window, make OpenGL context current, request v-sync
+        // 1. Verificar carga del modelo
+    if (!m) {
+        RCLCPP_ERROR(n.get_logger(), "Error al cargar modelo XML (%s): %s", n.model_file.c_str(), error);
+        rclcpp::shutdown();
+        return 1;
+    }
+
+    // 2. Verificar inicialización de GLFW
+    if (!glfwInit()) {
+        RCLCPP_ERROR(n.get_logger(), "Error: No se pudo inicializar GLFW");
+        rclcpp::shutdown();
+        return 1;
+    }
+
+    // 3. Verificar creación de la ventana gráfica
     GLFWwindow* window = glfwCreateWindow(1200, 900, "Demo", NULL, NULL);
+    if (!window) {
+        RCLCPP_ERROR(n.get_logger(), "Error: GLFW no pudo crear la ventana. Revisa los drivers de pantalla o la variable $DISPLAY.");
+        glfwTerminate();
+        rclcpp::shutdown();
+        return 1;
+}
+    
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
     
-    // initialize visualization data structures
     mjv_defaultCamera(&cam);
     mjv_defaultOption(&opt);
     mjv_defaultScene(&scn);
     mjr_defaultContext(&con);
   
-    // create scene and context
     mjv_makeScene(m, &scn, 2000);
     mjr_makeContext(m, &con, mjFONTSCALE_150);
 
-    // install GLFW mouse and keyboard callbacks
     glfwSetKeyCallback(window, keyboard);
     glfwSetCursorPosCallback(window, mouse_move);
     glfwSetMouseButtonCallback(window, mouse_button);
     glfwSetScrollCallback(window, scroll);
 
-    // run main loop, target real-time simulation and 60 fps rendering
     int actuator_id = mj_name2id(m, mjOBJ_ACTUATOR, "AAHead_yaw");
-    mjv_moveCamera(m, mjMOUSE_ZOOM, 0, -0.05*5, &cam);
-    while (!glfwWindowShouldClose(window) && rclcpp::ok()) {
-	// advance interactive simulation for 1/60 sec
-	//  Assuming MuJoCo can simulate faster than real-time, which it usually can,
-	//  this loop will finish on time for the next frame to be rendered at 60 fps.
-	//  Otherwise add a cpu timer and exit this loop when it is time to render.
-	mjtNum simstart = d->time;
-	while (d->time - simstart < 1.0/30.0) {
-	    mj_step(m, d);
-	}
-	
-	// get framebuffer viewport
-	mjrRect viewport = {0, 0, 0, 0};
-	glfwGetFramebufferSize(window, &viewport.width, &viewport.height);
-	
-	// update scene and render
-	mjv_updateScene(m, d, &opt, NULL, &cam, mjCAT_ALL, &scn);
-	mjr_render(viewport, &scn, &con);
-	
-	// swap OpenGL buffers (blocking call due to v-sync)
-	glfwSwapBuffers(window);
-	
-	// process pending GUI events, call GLFW callbacks
-	glfwPollEvents();
+    if (actuator_id < 0) {
+        RCLCPP_WARN(n.get_logger(), "El actuador 'AAHead_yaw' no fue encontrado en el modelo.");
+    }
 
-	rclcpp::spin_some(n.get_node_base_interface());
-	rate.sleep();
-	//print_qpos(m,d);
-	d->ctrl[actuator_id] = sin(6.28*d->time);
+    if (m) {
+        mjv_moveCamera(m, mjMOUSE_ZOOM, 0, -0.05*5, &cam);
+    }
+
+    while (!glfwWindowShouldClose(window) && rclcpp::ok()) {
+        mjtNum simstart = d->time;
+        while (d->time - simstart < 1.0/30.0) {
+            mj_step(m, d);
+        }
+        
+        mjrRect viewport = {0, 0, 0, 0};
+        glfwGetFramebufferSize(window, &viewport.width, &viewport.height);
+        
+        mjv_updateScene(m, d, &opt, NULL, &cam, mjCAT_ALL, &scn);
+        mjr_render(viewport, &scn, &con);
+        
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+
+        rclcpp::spin_some(n.get_node_base_interface());
+        rate.sleep();
+
+        // Control seguro del actuador
+        if (actuator_id >= 0) {
+            d->ctrl[actuator_id] = sin(6.28 * d->time);
+        }
     }
     
-    //free visualization storage
     mjv_freeScene(&scn);
     mjr_freeContext(&con);
-    
-    // free MuJoCo model and data
     mj_deleteData(d);
     mj_deleteModel(m);
 
