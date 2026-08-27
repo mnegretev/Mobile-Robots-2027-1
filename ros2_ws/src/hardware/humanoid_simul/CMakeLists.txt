@@ -12,6 +12,15 @@ find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 
+# MuJoCo
+set(MUJOCO_DIR "/home/diego/mujoco_install")
+include_directories(
+  ${MUJOCO_DIR}/include
+)
+link_directories(
+  ${MUJOCO_DIR}/lib
+)
+
 add_executable(humanoid_simul src/humanoid_simul.cpp)
 target_include_directories(humanoid_simul PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
