@@ -8,6 +8,7 @@
 #
 
 import rclpy
+import math
 from rclpy.node import Node
 from rclpy.duration import Duration
 from geometry_msgs.msg import Twist, PointStamped
@@ -54,15 +55,15 @@ class RosBasicsNode(Node):
             # If there is an obstacle on the right, then turn left
             # If there is an obstacle in front, then turn around
             #
+            if self.obstacle_front:
+                 self.get_logger().info("Obstacle in front")
+                 self.move(0, 0.78, 4.0)
             if self.obstacle_left:
                 self.get_logger().info("Obstacle on the left")
                 self.move(0, -0.78, 2.0)
             elif self.obstacle_right:
                 self.get_logger().info("Obstacle on the right")
                 self.move(0, 0.78, 2.0)
-            elif self.obstacle_front:
-                 self.get_logger().info("Obstacle in front")
-                 self.move(0, 0.78, 4.0)
             else:
                  self.get_logger().info("Moving forward")
                  self.move(0.5, 0.0, 0.5)
@@ -82,11 +83,43 @@ class RosBasicsNode(Node):
         # Check online documentation of LaserScan message
         #
         
-        n = len(msg.ranges)
-        self.obstacle_left = msg.ranges[n//2 + 100] < 1.0
-        self.obstacle_right = msg.ranges[n//2 - 100] < 1.0
-        self.obstacle_front = msg.ranges[n//2] < 1.0
-	
+        # Sectores del LiDAR en grados
+        front_min = math.radians(-15)
+        front_max = math.radians(15)
+
+        left_min = math.radians(15)
+        left_max = math.radians(60)
+
+        right_min = math.radians(-60)
+        right_max = math.radians(-15)
+
+        self.obstacle_front = False
+        self.obstacle_left = False
+        self.obstacle_right = False
+
+        for i, distance in enumerate(msg.ranges):
+
+            angle = msg.angle_min + i * msg.angle_increment
+
+            # Ignoramos lo valores invalidos que puedan provocar problemas
+            if not math.isfinite(distance):
+                continue
+            if distance <= 0.0:
+                continue
+
+
+            if front_min <= angle <= front_max:
+                if distance < 1.0:
+                    self.obstacle_front = True
+
+            elif left_min <= angle <= left_max:
+                if distance < 1.0:
+                    self.obstacle_left = True
+
+            elif right_min <= angle <= right_max:
+                if distance < 1.0:
+                    self.obstacle_right = True
+
         return
 
 
