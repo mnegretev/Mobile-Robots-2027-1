@@ -17,7 +17,7 @@ from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point
 import numpy
 
-FULL_NAME = "FULL NAME"
+FULL_NAME = "German Segovia Merlin"
 
 class KMeansNode(Node):
     def generate_random_centroids(self, K, min_x, min_y, max_x, max_y, static_map):
@@ -36,6 +36,9 @@ class KMeansNode(Node):
         return centroids
 
     def recalculate_centroids(self, centroids, P):
+        # Convertir centroids a numpy array si es una lista
+        if isinstance(centroids, list):
+            centroids = numpy.array(centroids)
         clusters = numpy.zeros(centroids.shape)
         counters = numpy.zeros((len(centroids), 1))
         new_centroids = numpy.zeros(centroids.shape)
@@ -48,11 +51,14 @@ class KMeansNode(Node):
         #   Increment the correspoinding counter by one
         # Get the new centroids by averaging all added points to each new centroid
         #
-        
+        for p in P:
+            idx = numpy.argmin([numpy.linalg.norm(p-c) for c in centroids])
+            clusters[idx] = clusters[idx] + p
+            counters[idx] += 1
+        new_centroids = [clusters[i]/counters[i] for i in range(len(centroids))]
         #
         # END OF TODO
         #
-        new_centroids = numpy.asarray(new_centroids)
         return new_centroids
             
 
@@ -69,7 +75,13 @@ class KMeansNode(Node):
         #   Recalculate centroids
         #   Get the maximum distance between each new centroid and its corresponding previous centroid
         #
-        
+        while max_distance > tol:
+            self.get_logger().info("Recalculating centroids")
+            new_centroids = self.recalculate_centroids(centroids, P)
+            max_distance = numpy.max([numpy.linalg.norm(centroids[i] - new_centroids[i]) for i in range(len(centroids))])
+            centroids = new_centroids
+            iterations += 1
+            self.pub_centroids.publish(self.get_centroids_marker(centroids))
         #
         # END OF TODO
         #
