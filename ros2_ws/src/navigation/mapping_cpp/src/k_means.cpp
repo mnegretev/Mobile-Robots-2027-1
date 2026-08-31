@@ -76,7 +76,29 @@ public:
 	 * Use as reference the python version of this algorithm.
 	 * Use the declared variables and the Eigen library
 	 */
-	
+       	for(size_t i = 0; i < points.size(); i++){
+            int idx = 0;
+            double min_distance = std::numeric_limits<double>::max();
+
+            for(size_t j = 0; j < centroids.size(); j++){
+                double distance = (points[i] - centroids[j]).norm();
+
+                if(distance < min_distance){
+                    min_distance = distance;
+                    idx = j;
+                }
+            }
+
+            new_centroids[idx] += points[i];
+            counters[idx]++;
+        }
+
+        for(size_t i = 0; i < centroids.size(); i++){
+            if(counters[i] > 0)
+                new_centroids[i] = new_centroids[i] / counters[i];
+            else
+                new_centroids[i] = centroids[i];
+        }
 	/*
 	 * END OF TODO
 	 */
@@ -151,7 +173,18 @@ public:
 	     * Use as reference the python version of this algorithm.
 	     * Use the declared variables and the Eigen library
 	     */
-	    
+	    std::vector<Eigen::Vector2d> new_centroids = recalculate_centroids(centroids, P);
+
+            max_dist = 0.0;
+
+            for(size_t i = 0; i < centroids.size(); i++){
+                double distance = (centroids[i] - new_centroids[i]).norm();
+
+                if(distance > max_dist)
+                    max_dist = distance;
+            }
+
+            centroids = new_centroids;
 	    /*
 	     * END OF TODO
 	     */
