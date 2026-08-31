@@ -15,7 +15,7 @@
 #include "random_numbers/random_numbers.h"
 #include "visualization_msgs/msg/marker.hpp"
 
-#define FULL_NAME "FULL NAME"
+#define FULL_NAME "LEONARDO ALEJANDRO GARCIA LERMA"
 
 class KMeansNode : public rclcpp::Node
 {
@@ -76,7 +76,25 @@ public:
 	 * Use as reference the python version of this algorithm.
 	 * Use the declared variables and the Eigen library
 	 */
-	
+	while (max_distance > tol) {
+    RCLCPP_INFO(this->get_logger(), "Recalculating centroids");
+
+    auto new_centroids = recalculate_centroids(centroids, P);
+
+    // Calcular la distancia máxima entre los centroides viejos y nuevos
+    max_distance = 0.0;
+    for (size_t i = 0; i < centroids.size(); ++i) {
+        double dist = std::hypot(centroids[i].x - new_centroids[i].x,
+                                 centroids[i].y - new_centroids[i].y);
+        if (dist > max_distance) {
+            max_distance = dist;
+        }
+    }
+
+    centroids = new_centroids;
+    iterations += 1;
+    pub_centroids_->publish(get_centroids_marker(centroids));
+}
 	/*
 	 * END OF TODO
 	 */
@@ -151,7 +169,32 @@ public:
 	     * Use as reference the python version of this algorithm.
 	     * Use the declared variables and the Eigen library
 	     */
-	    
+	    for (const auto& p : P) {
+    int best_idx = 0;
+    double min_dist = std::numeric_limits<double>::max();
+
+    // Encontrar el centroide más cercano
+    for (size_t c = 0; c < centroids.size(); ++c) {
+        double dist = std::hypot(p.x - centroids[c].x, p.y - centroids[c].y);
+        if (dist < min_dist) {
+            min_dist = dist;
+            best_idx = c;
+        }
+    }
+
+    // Sumar las coordenadas del punto al cluster correspondiente
+    clusters[best_idx].x += p.x;
+    clusters[best_idx].y += p.y;
+    counters[best_idx] += 1;
+}
+
+// Calcular el promedio para obtener los nuevos centroides
+for (size_t i = 0; i < centroids.size(); ++i) {
+    if (counters[i] > 0) {
+        new_centroids[i].x = clusters[i].x / counters[i];
+        new_centroids[i].y = clusters[i].y / counters[i];
+    }
+}
 	    /*
 	     * END OF TODO
 	     */
