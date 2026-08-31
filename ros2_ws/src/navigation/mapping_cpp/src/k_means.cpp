@@ -14,8 +14,9 @@
 #include "nav_msgs/srv/get_map.hpp"
 #include "random_numbers/random_numbers.h"
 #include "visualization_msgs/msg/marker.hpp"
+#include <chrono>
 
-#define FULL_NAME "FULL NAME"
+#define FULL_NAME "SOLORIO GONZALEZ ALDO BRUNO"
 
 class KMeansNode : public rclcpp::Node
 {
@@ -77,6 +78,31 @@ public:
 	 * Use the declared variables and the Eigen library
 	 */
 	
+	for(size_t i = 0; i < points.size(); i++){
+		int nearest_centroid = 0;
+		double min_distance = std::numeric_limits<double>::max();
+
+		for(size_t j = 0; j < centroids.size(); j++){
+			double distance = (points[i] - centroids[j]).norm();
+
+			if(distance < min_distance){
+				min_distance = distance;
+				nearest_centroid = j;
+			}
+		}
+
+		new_centroids[nearest_centroid] += points[i];
+		counters[nearest_centroid]++;
+	}
+
+	for(size_t i = 0; i < centroids.size(); i++){
+		if(counters[i] > 0){
+			new_centroids[i] /= counters[i];
+		}else{
+			new_centroids[i] = centroids[i];
+		}
+	}
+
 	/*
 	 * END OF TODO
 	 */
@@ -140,6 +166,8 @@ public:
 	pub_marker->publish(mrk);
 
 	double max_dist = std::numeric_limits<double>::max();
+	double total_execution_time = 0.0;
+
 	while(rclcpp::ok() && max_dist > this->tol){
 	    pub_marker->publish(mrk);
 	    rclcpp::spin_some(this->get_node_base_interface());
@@ -152,12 +180,45 @@ public:
 	     * Use the declared variables and the Eigen library
 	     */
 	    
+		auto start_time = std::chrono::high_resolution_clock::now();
+
+		std::vector<Eigen::Vector2d> new_centroids = recalculate_centroids(centroids, P);
+
+		max_dist = 0.0;
+
+		for(size_t i = 0; i < centroids.size(); i++){
+			double distance = (centroids[i] - new_centroids[i]).norm();
+
+			if(distance > max_dist){
+				max_dist = distance;
+			}
+		}
+
+		centroids = new_centroids;
+
+		auto end_time = std::chrono::high_resolution_clock::now();
+
+		std::chrono::duration<double> elapsed = end_time - start_time;
+
+		total_execution_time += elapsed.count();
+
+		RCLCPP_INFO(
+			this->get_logger(),
+			"K-means iteration execution time: %.6f seconds",
+			elapsed.count()
+		);
+
 	    /*
 	     * END OF TODO
 	     */
 	    RCLCPP_INFO(this->get_logger(), "Max change in centroids: %lf", max_dist);
 	    mrk = get_centroids_marker(centroids);
 	}
+	RCLCPP_INFO(
+    this->get_logger(),
+    "K-means total execution time: %.6f seconds",
+    total_execution_time
+	);
     }
 
 private:
