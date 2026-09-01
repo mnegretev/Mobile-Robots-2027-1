@@ -16,7 +16,7 @@
 #include "random_numbers/random_numbers.h"
 #include "visualization_msgs/msg/marker.hpp"
 
-#define FULL_NAME "Bren"
+#define FULL_NAME "PÉREZ ROJO ABRAHAM"
 
 class KMeansNode : public rclcpp::Node
 {
