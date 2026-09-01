@@ -16,7 +16,7 @@ from nav_msgs.msg import OccupancyGrid
 from nav_msgs.srv import GetMap
 import numpy
 
-FULL_NAME = "FULL NAME"
+FULL_NAME = "Renata Baños Reyes"
 
 class CostMapNode(Node):
     def get_inflated_map(self, static_map, inflation_cells):
@@ -31,7 +31,18 @@ class CostMapNode(Node):
         # Map is given in 'static_map' as a bidimensional numpy array.
         # Consider as occupied cells all cells with an occupation value greater than 50
         #
+        for i in range(len(static_map)):
+            for j in range(len(static_map[0])):#recorre cada celda del mapa
 
+                if static_map[i, j] == 100: #si la celda es un obstaculo, se procede a inflarla
+
+                    for k1 in range(-inflation_cells, inflation_cells): 
+                        for k2 in range(-inflation_cells, inflation_cells):
+
+                            r = min(height - 1, max(0, i + k1))#verifica que la celda a modificar este dentro de los limites del mapa
+                            c = min(width - 1, max(0, j + k2))
+
+                            inflated[r, c] = 100#infla la celda vecina al obstaculo
         return inflated
     
     def get_cost_map(self, static_map, cost_radius):
@@ -58,8 +69,18 @@ class CostMapNode(Node):
         #  [ 3 X 3 3 3 2]
         #  [ 3 3 3 X 3 2]]
         # Cost_radius indicates the number of cells around obstacles with costs greater than zero.
-        # Just for visualization purposes, the cost is multiplied by 4
-        
+        # Just for visualization purposes, the cost is multiplied by 4   
+        for i in range(height): #revisa cada casilla del mapa renglon y columna
+            for j in range(width):
+                if static_map[i,j] == 100:
+                    if static_map[i+1,j] == 100 and static_map[i-1,j] == 100 and static_map[i,j+1] == 100 and static_map[i,j-1] == 100: #revisa si las celdas vecinas son obstaculos, si es asi no hace nada
+                        continue
+                    for k1 in range(-cost_radius, cost_radius+1): #desplazamiento vertical
+                        for k2 in range(-cost_radius, cost_radius+1): #desplazamiento horizontal
+                            if (i+k1) < 0 or (i+k1) >= height or (j+k2) >= width or static_map[i+k1, j+k2] == 100:
+                                continue #verifica si la celda a modificar es válida si no continua con la siguiente iteracion
+                            cost = 4*(cost_radius - max(abs(k1), abs(k2)) + 1)#cada iteracion el costo va disminuyendo a medida que se aleja del obstaculo
+                            cost_map[i+k1, j+k2] = max(cost, cost_map[i+k1, j+k2]) #asigna el costo a la celda si es mayor que el costo actual
         return cost_map
 
     def callback_inflated_map(self, request, response):

@@ -14,8 +14,9 @@
 #include "nav_msgs/srv/get_map.hpp"
 #include "random_numbers/random_numbers.h"
 #include "visualization_msgs/msg/marker.hpp"
+#include <chrono>
 
-#define FULL_NAME "FULL NAME"
+#define FULL_NAME "Baños Reyes Renata"
 
 class KMeansNode : public rclcpp::Node
 {
@@ -76,7 +77,28 @@ public:
 	 * Use as reference the python version of this algorithm.
 	 * Use the declared variables and the Eigen library
 	 */
-	
+	std::vector<Eigen::Vector2d> clusters(centroids.size(), Eigen::Vector2d::Zero());
+	for(size_t i = 0; i < counters.size(); i++)
+		counters[i] = 0;
+
+	for(size_t j = 0; j < points.size(); j++){
+		int idx = 0;
+		double min_dist = (points[j] - centroids[0]).norm();
+		for(size_t c = 1; c < centroids.size(); c++){
+		double dist = (points[j] - centroids[c]).norm();
+		if(dist < min_dist){
+			min_dist = dist;
+			idx = (int)c;
+		}
+		}
+		clusters[idx] += points[j];
+		counters[idx]++;
+	}
+
+	for(size_t i = 0; i < centroids.size(); i++)
+		new_centroids[i] = clusters[i] / counters[i];	
+								
+
 	/*
 	 * END OF TODO
 	 */
@@ -140,7 +162,9 @@ public:
 	pub_marker->publish(mrk);
 
 	double max_dist = std::numeric_limits<double>::max();
+	auto inicio = std::chrono::high_resolution_clock::now();
 	while(rclcpp::ok() && max_dist > this->tol){
+
 	    pub_marker->publish(mrk);
 	    rclcpp::spin_some(this->get_node_base_interface());
 	    rclcpp::sleep_for(std::chrono::milliseconds(100));
@@ -151,13 +175,26 @@ public:
 	     * Use as reference the python version of this algorithm.
 	     * Use the declared variables and the Eigen library
 	     */
-	    
+		std::vector<Eigen::Vector2d> new_centroids = recalculate_centroids(centroids, P);
+
+		max_dist = 0.0;
+		for(size_t i = 0; i < centroids.size(); i++){
+			double dist = (centroids[i] - new_centroids[i]).norm();
+			if(dist > max_dist)
+			max_dist = dist;
+		}
+
+		centroids = new_centroids;	    
 	    /*
 	     * END OF TODO
 	     */
 	    RCLCPP_INFO(this->get_logger(), "Max change in centroids: %lf", max_dist);
 	    mrk = get_centroids_marker(centroids);
 	}
+	auto fin = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> duracion = fin - inicio;
+	RCLCPP_INFO(this->get_logger(), "K-means finished in %lf seconds",duracion.count());
+
     }
 
 private:
