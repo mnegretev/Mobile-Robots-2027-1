@@ -15,7 +15,7 @@
 #include "random_numbers/random_numbers.h"
 #include "visualization_msgs/msg/marker.hpp"
 
-#define FULL_NAME "FULL NAME"
+#define FULL_NAME "Enrique Medrano Solano"
 
 class KMeansNode : public rclcpp::Node
 {
@@ -66,7 +66,7 @@ public:
     }
 
     std::vector<Eigen::Vector2d> recalculate_centroids(std::vector<Eigen::Vector2d>& centroids,
-						       std::vector<Eigen::Vector2d>& points){
+						       std::vector<Eigen::Vector2d>& P){
 	RCLCPP_INFO(this->get_logger(), "Recalculating centroids");
 	std::vector<Eigen::Vector2d> new_centroids(centroids.size());	    
 	std::vector<int> counters(centroids.size());
@@ -76,7 +76,29 @@ public:
 	 * Use as reference the python version of this algorithm.
 	 * Use the declared variables and the Eigen library
 	 */
-	
+	for (const auto& p : P) {
+        int min_idx = 0;
+        double min_dist = std::numeric_limits<double>::max();
+
+        for (size_t i = 0; i < centroids.size(); ++i) {
+            double dist = (p - centroids[i]).norm();
+            if (dist < min_dist) {
+                min_dist = dist;
+                min_idx = i;
+            }
+        }
+
+        new_centroids[min_idx] += p;
+        counters[min_idx] += 1;
+    }
+
+    for (size_t i = 0; i < new_centroids.size(); ++i) {
+        if (counters[i] > 0) {
+            new_centroids[i] /= counters[i];
+        } else {
+            new_centroids[i] = centroids[i]; 
+        }
+    }
 	/*
 	 * END OF TODO
 	 */
@@ -135,6 +157,8 @@ public:
 	}
 	
 	std::vector<Eigen::Vector2d> P = get_cartesian_free_points(inflated_map);
+	rclcpp::Time start_time = this->get_clock()->now();
+
 	std::vector<Eigen::Vector2d> centroids = generate_random_centroids(this->K, -5, -5, 10, 5,  inflated_map);
 	visualization_msgs::msg::Marker mrk = get_centroids_marker(centroids);
 	pub_marker->publish(mrk);
@@ -151,12 +175,25 @@ public:
 	     * Use as reference the python version of this algorithm.
 	     * Use the declared variables and the Eigen library
 	     */
-	    
+	    std::vector<Eigen::Vector2d> new_centroids = recalculate_centroids(centroids, P);
+        max_dist = 0.0;
+        
+        for (size_t i = 0; i < centroids.size(); ++i) {
+            double dist = (centroids[i] - new_centroids[i]).norm();
+            if (dist > max_dist) {
+                max_dist = dist;
+            }
+        }
+        centroids = new_centroids;
 	    /*
 	     * END OF TODO
 	     */
 	    RCLCPP_INFO(this->get_logger(), "Max change in centroids: %lf", max_dist);
 	    mrk = get_centroids_marker(centroids);
+
+		rclcpp::Time end_time = this->get_clock()->now();
+        rclcpp::Duration duration = end_time - start_time;
+        RCLCPP_INFO(this->get_logger(), "Time of converged: %f seconds", duration.seconds());
 	}
     }
 
