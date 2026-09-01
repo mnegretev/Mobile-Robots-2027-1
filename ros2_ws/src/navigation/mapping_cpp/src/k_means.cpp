@@ -65,22 +65,37 @@ public:
 	return C;
     }
 
-    std::vector<Eigen::Vector2d> recalculate_centroids(std::vector<Eigen::Vector2d>& centroids,
-						       std::vector<Eigen::Vector2d>& points){
-	RCLCPP_INFO(this->get_logger(), "Recalculating centroids");
-	std::vector<Eigen::Vector2d> new_centroids(centroids.size());	    
-	std::vector<int> counters(centroids.size());
-	/*
-	 * TODO:
-	 * Implement the steps to recalculate centroids.
-	 * Use as reference the python version of this algorithm.
-	 * Use the declared variables and the Eigen library
-	 */
-	
-	/*
-	 * END OF TODO
-	 */
-	return new_centroids;
+std::vector<Eigen::Vector2d> recalculate_centroids(std::vector<Eigen::Vector2d>& centroids,
+                               std::vector<Eigen::Vector2d>& points){
+    RCLCPP_INFO(this->get_logger(), "Recalculating centroids");
+    std::vector<Eigen::Vector2d> new_centroids(centroids.size(), Eigen::Vector2d::Zero());       
+    std::vector<int> counters(centroids.size(), 0);
+    
+    // Asignar cada punto al centroide más cercano y acumular
+    for(const auto& p : points){
+        int best_idx = 0;
+        double min_dist = (p - centroids[0]).squaredNorm();
+        for(size_t i = 1; i < centroids.size(); ++i){
+            double dist = (p - centroids[i]).squaredNorm();
+            if(dist < min_dist){
+                min_dist = dist;
+                best_idx = i;
+            }
+        }
+        new_centroids[best_idx] += p;
+        counters[best_idx]++;
+    }
+
+    // Calcular las nuevas medias y manejar clusters vacíos
+    for(size_t i = 0; i < centroids.size(); ++i){
+        if(counters[i] > 0){
+            new_centroids[i] /= counters[i];
+        } else {
+            new_centroids[i] = centroids[i]; // Mantiene la posición anterior si está vacío
+        }
+    }
+    
+    return new_centroids;
     }
 
     visualization_msgs::msg::Marker get_centroids_marker(std::vector<Eigen::Vector2d>& centroids){
@@ -144,17 +159,15 @@ public:
 	    pub_marker->publish(mrk);
 	    rclcpp::spin_some(this->get_node_base_interface());
 	    rclcpp::sleep_for(std::chrono::milliseconds(100));
-	    /*
-	     * TODO:
-	     * Recalculate centroids
-	     * Get the maximum distance between each centroids and is corresponding new centroid
-	     * Use as reference the python version of this algorithm.
-	     * Use the declared variables and the Eigen library
-	     */
-	    
-	    /*
-	     * END OF TODO
-	     */
+	std::vector<Eigen::Vector2d> new_centroids = recalculate_centroids(centroids, P);
+        max_dist = 0.0;
+        for(size_t i = 0; i < centroids.size(); ++i){
+            double dist = (new_centroids[i] - centroids[i]).norm();
+            if(dist > max_dist){
+                max_dist = dist;
+            }
+        }
+        centroids = new_centroids;
 	    RCLCPP_INFO(this->get_logger(), "Max change in centroids: %lf", max_dist);
 	    mrk = get_centroids_marker(centroids);
 	}
