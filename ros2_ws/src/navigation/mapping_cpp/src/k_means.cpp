@@ -10,154 +10,192 @@
 #include <cstdio>
 #include <limits>
 #include <Eigen/Dense>
+#include <chrono>
 #include "rclcpp/rclcpp.hpp"
 #include "nav_msgs/srv/get_map.hpp"
 #include "random_numbers/random_numbers.h"
 #include "visualization_msgs/msg/marker.hpp"
 
-#define FULL_NAME "FULL NAME"
+#define FULL_NAME "Luis Yehosua Orihuela Castillo"
 
 class KMeansNode : public rclcpp::Node
 {
 public:
     KMeansNode():Node("k_means"){
-	RCLCPP_INFO(this->get_logger(), "INITIALIZING K-MEANS NODE - %s", FULL_NAME);
-	K = this->declare_parameter<int>("K", 3);
-	tol = this->declare_parameter<double>("tol", 0.2);
-	clt_inflated_map = this->create_client<nav_msgs::srv::GetMap>("/get_inflated_map");
-	pub_marker = this->create_publisher<visualization_msgs::msg::Marker>("/mapping/k_means_centroids", 1);
+        RCLCPP_INFO(this->get_logger(), "INITIALIZING K-MEANS NODE - %s", FULL_NAME);
+        K = this->declare_parameter<int>("K", 3);
+        tol = this->declare_parameter<double>("tol", 0.2);
+        clt_inflated_map = this->create_client<nav_msgs::srv::GetMap>("/get_inflated_map");
+        pub_marker = this->create_publisher<visualization_msgs::msg::Marker>("/mapping/k_means_centroids", 1);
     }
 
     std::vector<Eigen::Vector2d> get_cartesian_free_points(nav_msgs::msg::OccupancyGrid& map){
-	std::vector<Eigen::Vector2d> P;
-	for(size_t i=0; i < map.data.size(); i++){
-	    if(map.data[i] != 0)
-		continue;
-	    int row = i / map.info.width;
-	    int col = i % map.info.width;
-	    double x = col * map.info.resolution + map.info.origin.position.x;
-	    double y = row * map.info.resolution + map.info.origin.position.y;
-	    Eigen::Vector2d p(x,y);
-	    P.push_back(p);
-	}
-	RCLCPP_INFO(this->get_logger(), "Got map with %lu points in free space", P.size());
-	return P;
+        std::vector<Eigen::Vector2d> P;
+        for(size_t i=0; i < map.data.size(); i++){
+            if(map.data[i] != 0)
+                continue;
+            int row = i / map.info.width;
+            int col = i % map.info.width;
+            double x = col * map.info.resolution + map.info.origin.position.x;
+            double y = row * map.info.resolution + map.info.origin.position.y;
+            Eigen::Vector2d p(x,y);
+            P.push_back(p);
+        }
+        RCLCPP_INFO(this->get_logger(), "Got map with %lu points in free space", P.size());
+        return P;
     }
 
     std::vector<Eigen::Vector2d> generate_random_centroids(int K, double min_x, double min_y, double max_x, double max_y,
-							   nav_msgs::msg::OccupancyGrid& map){
-	std::vector<Eigen::Vector2d> C;
-	random_numbers::RandomNumberGenerator rnd;
-	for(int i=0; i < K; i++){
-	    bool in_free_space = false;
-	    double x,y;
-	    while(!in_free_space){
-		x = rnd.uniformReal(min_x, max_x);
-		y = rnd.uniformReal(min_y, max_y);
-		int row = (int)((y - map.info.origin.position.y)/map.info.resolution);
-		int col = (int)((x - map.info.origin.position.x)/map.info.resolution);
-		in_free_space = map.data[row*map.info.width + col] == 0;
-	    }
-	    Eigen::Vector2d c(x,y);
-	    C.push_back(c);
-	}
-	RCLCPP_INFO(this->get_logger(), "Generated %lu random centroids", C.size());
-	return C;
+                               nav_msgs::msg::OccupancyGrid& map){
+        std::vector<Eigen::Vector2d> C;
+        random_numbers::RandomNumberGenerator rnd;
+        for(int i=0; i < K; i++){
+            bool in_free_space = false;
+            double x,y;
+            while(!in_free_space){
+                x = rnd.uniformReal(min_x, max_x);
+                y = rnd.uniformReal(min_y, max_y);
+                int row = (int)((y - map.info.origin.position.y)/map.info.resolution);
+                int col = (int)((x - map.info.origin.position.x)/map.info.resolution);
+                in_free_space = map.data[row*map.info.width + col] == 0;
+            }
+            Eigen::Vector2d c(x,y);
+            C.push_back(c);
+        }
+        RCLCPP_INFO(this->get_logger(), "Generated %lu random centroids", C.size());
+        return C;
     }
 
     std::vector<Eigen::Vector2d> recalculate_centroids(std::vector<Eigen::Vector2d>& centroids,
-						       std::vector<Eigen::Vector2d>& points){
-	RCLCPP_INFO(this->get_logger(), "Recalculating centroids");
-	std::vector<Eigen::Vector2d> new_centroids(centroids.size());	    
-	std::vector<int> counters(centroids.size());
-	/*
-	 * TODO:
-	 * Implement the steps to recalculate centroids.
-	 * Use as reference the python version of this algorithm.
-	 * Use the declared variables and the Eigen library
-	 */
-	
-	/*
-	 * END OF TODO
-	 */
-	return new_centroids;
+                               std::vector<Eigen::Vector2d>& points){
+        RCLCPP_INFO(this->get_logger(), "Recalculating centroids");
+        
+        // Inicializar en 0 explícitamente es importante en Eigen
+        std::vector<Eigen::Vector2d> new_centroids(centroids.size(), Eigen::Vector2d(0.0, 0.0));       
+        std::vector<int> counters(centroids.size(), 0);
+        
+        /*
+         * TODO:
+         */
+        for(const auto& p : points){
+            double min_dist = std::numeric_limits<double>::max();
+            int best_idx = -1;
+            
+            for(size_t i = 0; i < centroids.size(); i++){
+                double dist = (p - centroids[i]).norm();
+                if(dist < min_dist){
+                    min_dist = dist;
+                    best_idx = i;
+                }
+            }
+            if(best_idx != -1){
+                new_centroids[best_idx] += p;
+                counters[best_idx]++;
+            }
+        }
+        for(size_t i = 0; i < centroids.size(); i++){
+            if(counters[i] > 0){
+                new_centroids[i] /= counters[i];
+            } else {
+                new_centroids[i] = centroids[i]; 
+            }
+        }
+        /*
+         * END OF TODO
+         */
+        return new_centroids;
     }
 
     visualization_msgs::msg::Marker get_centroids_marker(std::vector<Eigen::Vector2d>& centroids){
-	visualization_msgs::msg::Marker mrk;
-	mrk.header.frame_id = "map";
+        visualization_msgs::msg::Marker mrk;
+        mrk.header.frame_id = "map";
         mrk.header.stamp = this->get_clock()->now();
         mrk.ns = "mapping";
-	mrk.lifetime.sec=10000;
+        mrk.lifetime.sec=10000;
         mrk.id = 0;
         mrk.type   = visualization_msgs::msg::Marker::SPHERE_LIST;
         mrk.action = visualization_msgs::msg::Marker::ADD;
-	mrk.scale.x = 0.2;
-	mrk.scale.y = 0.2;
-	mrk.scale.z = 0.2;
-	mrk.color.r = 1.0;
-	mrk.color.a = 1.0;
-	for(size_t i=0; i < centroids.size(); i++){
-	    geometry_msgs::msg::Point p;
-	    p.x = centroids[i][0];
-	    p.y = centroids[i][1];
-	    mrk.points.push_back(p);
-	}
-	return mrk;
+        mrk.scale.x = 0.2;
+        mrk.scale.y = 0.2;
+        mrk.scale.z = 0.2;
+        mrk.color.r = 1.0;
+        mrk.color.a = 1.0;
+        for(size_t i=0; i < centroids.size(); i++){
+            geometry_msgs::msg::Point p;
+            p.x = centroids[i][0];
+            p.y = centroids[i][1];
+            mrk.points.push_back(p);
+        }
+        return mrk;
     }
 
     void spin()
     {
-	/*
-	 * Waiting for inflated map service to be available
-	 */
-	RCLCPP_INFO(this->get_logger(), "Waiting for inflated map");
-	while(!this->clt_inflated_map->wait_for_service(std::chrono::seconds(1))){
-	    if(!rclcpp::ok()){
-		RCLCPP_INFO(this->get_logger(), "Interrupted while waiting for the inflated map service. Exiting.");
-		return;
-	    }
-	    RCLCPP_INFO(this->get_logger(), "Inflated map service not available, waiting again...");
-	}
-	/*
-	 * Getting inflated map
-	 */
-	nav_msgs::msg::OccupancyGrid inflated_map;
-	RCLCPP_INFO(this->get_logger(), "Inflated map service is now available. Getting inflated map.");
-	nav_msgs::srv::GetMap::Request::SharedPtr req = std::make_shared<nav_msgs::srv::GetMap::Request>();
-	rclcpp::Client<nav_msgs::srv::GetMap>::FutureAndRequestId result = this->clt_inflated_map->async_send_request(req);
-	if(rclcpp::spin_until_future_complete(this->get_node_base_interface(), result) == rclcpp::FutureReturnCode::SUCCESS){
-	    inflated_map = result.get()->map;
-	    RCLCPP_INFO(this->get_logger(), "Got map with size %d x %d", inflated_map.info.width, inflated_map.info.height);
-	}else{
-	    RCLCPP_INFO(this->get_logger(), "Cannot get inflated map. Aborting node. ");
-	    return;
-	}
-	
-	std::vector<Eigen::Vector2d> P = get_cartesian_free_points(inflated_map);
-	std::vector<Eigen::Vector2d> centroids = generate_random_centroids(this->K, -5, -5, 10, 5,  inflated_map);
-	visualization_msgs::msg::Marker mrk = get_centroids_marker(centroids);
-	pub_marker->publish(mrk);
+        /*
+         * Waiting for inflated map service to be available
+         */
+        RCLCPP_INFO(this->get_logger(), "Waiting for inflated map");
+        while(!this->clt_inflated_map->wait_for_service(std::chrono::seconds(1))){
+            if(!rclcpp::ok()){
+                RCLCPP_INFO(this->get_logger(), "Interrupted while waiting for the inflated map service. Exiting.");
+                return;
+            }
+            RCLCPP_INFO(this->get_logger(), "Inflated map service not available, waiting again...");
+        }
+        /*
+         * Getting inflated map
+         */
+        nav_msgs::msg::OccupancyGrid inflated_map;
+        RCLCPP_INFO(this->get_logger(), "Inflated map service is now available. Getting inflated map.");
+        nav_msgs::srv::GetMap::Request::SharedPtr req = std::make_shared<nav_msgs::srv::GetMap::Request>();
+        rclcpp::Client<nav_msgs::srv::GetMap>::FutureAndRequestId result = this->clt_inflated_map->async_send_request(req);
+        if(rclcpp::spin_until_future_complete(this->get_node_base_interface(), result) == rclcpp::FutureReturnCode::SUCCESS){
+            inflated_map = result.get()->map;
+            RCLCPP_INFO(this->get_logger(), "Got map with size %d x %d", inflated_map.info.width, inflated_map.info.height);
+        }else{
+            RCLCPP_INFO(this->get_logger(), "Cannot get inflated map. Aborting node. ");
+            return;
+        }
+        
+        std::vector<Eigen::Vector2d> P = get_cartesian_free_points(inflated_map);
+        std::vector<Eigen::Vector2d> centroids = generate_random_centroids(this->K, -5, -5, 10, 5,  inflated_map);
+        visualization_msgs::msg::Marker mrk = get_centroids_marker(centroids);
+        pub_marker->publish(mrk);
 
-	double max_dist = std::numeric_limits<double>::max();
-	while(rclcpp::ok() && max_dist > this->tol){
-	    pub_marker->publish(mrk);
-	    rclcpp::spin_some(this->get_node_base_interface());
-	    rclcpp::sleep_for(std::chrono::milliseconds(100));
-	    /*
-	     * TODO:
-	     * Recalculate centroids
-	     * Get the maximum distance between each centroids and is corresponding new centroid
-	     * Use as reference the python version of this algorithm.
-	     * Use the declared variables and the Eigen library
-	     */
-	    
-	    /*
-	     * END OF TODO
-	     */
-	    RCLCPP_INFO(this->get_logger(), "Max change in centroids: %lf", max_dist);
-	    mrk = get_centroids_marker(centroids);
-	}
+        auto start_time = std::chrono::high_resolution_clock::now();
+
+        double max_dist = std::numeric_limits<double>::max();
+        int iterations = 0;
+        while(rclcpp::ok() && max_dist > this->tol){
+            pub_marker->publish(mrk);
+            rclcpp::spin_some(this->get_node_base_interface());
+            rclcpp::sleep_for(std::chrono::milliseconds(100));
+            /*
+             * TODO:
+             */
+            std::vector<Eigen::Vector2d> new_centroids = recalculate_centroids(centroids, P);
+            max_dist = 0.0;
+            for(size_t i = 0; i < centroids.size(); i++){
+                double dist = (centroids[i] - new_centroids[i]).norm();
+                if(dist > max_dist){
+                    max_dist = dist;
+                }
+            }
+            
+            // Actualizar centroides e iteraciones
+            centroids = new_centroids;
+            iterations++;
+            /*
+             * END OF TODO
+             */
+            RCLCPP_INFO(this->get_logger(), "Max change in centroids: %lf", max_dist);
+            mrk = get_centroids_marker(centroids);
+        }
+        auto end_time = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsed_time = end_time - start_time;
+
+        RCLCPP_INFO(this->get_logger(), "Converged K centroids after %d iterations", iterations);
+        RCLCPP_INFO(this->get_logger(), "Tiempo de solución: %.4f segundos", elapsed_time.count());
     }
 
 private:
@@ -175,4 +213,3 @@ int main(int argc, char * argv[])
   rclcpp::shutdown();
   return 0;
 }
-

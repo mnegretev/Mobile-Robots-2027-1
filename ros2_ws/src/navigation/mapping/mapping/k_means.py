@@ -16,8 +16,9 @@ from nav_msgs.srv import GetMap
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point
 import numpy
+import time
 
-FULL_NAME = "FULL NAME"
+FULL_NAME = "Luis Yehosua Orihuela Castillo"
 
 class KMeansNode(Node):
     def generate_random_centroids(self, K, min_x, min_y, max_x, max_y, static_map):
@@ -48,7 +49,11 @@ class KMeansNode(Node):
         #   Increment the correspoinding counter by one
         # Get the new centroids by averaging all added points to each new centroid
         #
-        
+        for p in P:
+            idx = numpy.argmin([numpy.linalg.norm(p-c) for c in centroids])
+            clusters[idx] = clusters[idx] + p
+            counters[idx] += 1
+        new_centroids = [clusters[i]/counters[i] for i in range(len(centroids))]
         #
         # END OF TODO
         #
@@ -57,6 +62,7 @@ class KMeansNode(Node):
             
 
     def k_means(self, P, K, static_map, tol):
+        start_time = time.perf_counter()
         self.get_logger().info("Clustering " + str(len(P)) + "points with " + str(K) + " centroids")
         centroids = self.generate_random_centroids(K, -5, -5, 5, 5, static_map)
         self.pub_centroids.publish(self.get_centroids_marker(centroids))
@@ -69,11 +75,20 @@ class KMeansNode(Node):
         #   Recalculate centroids
         #   Get the maximum distance between each new centroid and its corresponding previous centroid
         #
-        
+        while max_distance > tol:
+            self.get_logger().info("Recalculating centroids")
+            new_centroids = self.recalculate_centroids(centroids, P)
+            max_distance = numpy.max([numpy.linalg.norm(centroids[i] - new_centroids[i]) for i in range(len(centroids))])
+            centroids = new_centroids
+            iterations += 1
+            self.pub_centroids.publish(self.get_centroids_marker(centroids))
         #
         # END OF TODO
         #
+        end_time = time.perf_counter()
+        elapsed_time = end_time - start_time
         self.get_logger().info(f"Converged K centroids after {iterations} iterations")
+        self.get_logger().info(f"Tiempo de solución: {elapsed_time:.4f} segundos")
     
     def __init__(self):
         super().__init__("k_means_node")
