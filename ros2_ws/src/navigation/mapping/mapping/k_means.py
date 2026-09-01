@@ -16,8 +16,9 @@ from nav_msgs.srv import GetMap
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point
 import numpy
+import time
 
-FULL_NAME = "FULL NAME"
+FULL_NAME = "PÉREZ ROJO ABRAHAM"
 
 class KMeansNode(Node):
     def generate_random_centroids(self, K, min_x, min_y, max_x, max_y, static_map):
@@ -48,7 +49,11 @@ class KMeansNode(Node):
         #   Increment the correspoinding counter by one
         # Get the new centroids by averaging all added points to each new centroid
         #
-        
+        for p in P:
+            idx = numpy.argmin([numpy.linalg.norm(p - c) for c in centroids])
+            clusters[idx] = clusters[idx] + p
+            counters[idx] += 1
+        new_centroids = [clusters[i] / counters[i] for i in range(len(centroids))]
         #
         # END OF TODO
         #
@@ -62,6 +67,10 @@ class KMeansNode(Node):
         self.pub_centroids.publish(self.get_centroids_marker(centroids))
         max_distance = float("inf")
         iterations = 0
+        
+        # Iniciar temporizador
+        start_time = time.perf_counter()
+        
         #
         # TODO:
         # Implement the K-means clustering algorithm
@@ -69,11 +78,22 @@ class KMeansNode(Node):
         #   Recalculate centroids
         #   Get the maximum distance between each new centroid and its corresponding previous centroid
         #
-        
+        while max_distance > tol:
+            self.get_logger().info("Recalculating centroids")
+            new_centroids = self.recalculate_centroids(centroids, P)
+            max_distance = numpy.max([numpy.linalg.norm(centroids[i] - new_centroids[i]) for i in range(len(centroids))])
+            centroids = new_centroids
+            iterations += 1
+            self.pub_centroids.publish(self.get_centroids_marker(centroids))
         #
         # END OF TODO
         #
+        
+        # Detener temporizador
+        end_time = time.perf_counter()
+        
         self.get_logger().info(f"Converged K centroids after {iterations} iterations")
+        self.get_logger().info(f"TIEMPO TOTAL DEL ALGORITMO: {(end_time - start_time) * 1000:.2f} ms")
     
     def __init__(self):
         super().__init__("k_means_node")

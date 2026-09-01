@@ -16,7 +16,7 @@ from nav_msgs.msg import OccupancyGrid
 from nav_msgs.srv import GetMap
 import numpy
 
-FULL_NAME = "FULL NAME"
+FULL_NAME = "PÉREZ ROJO ABRAHAM"
 
 class CostMapNode(Node):
     def get_inflated_map(self, static_map, inflation_cells):
@@ -31,6 +31,14 @@ class CostMapNode(Node):
         # Map is given in 'static_map' as a bidimensional numpy array.
         # Consider as occupied cells all cells with an occupation value greater than 50
         #
+        for i in range(len(static_map)):
+            for j in range(len(static_map[0])):
+                if static_map[i, j] == 100:
+                    for k1 in range(-inflation_cells, inflation_cells):
+                        for k2 in range(-inflation_cells, inflation_cells):
+                            r = min(height - 1, max(0, i + k1))
+                            c = min(width - 1, max(0, j + k2))
+                            inflated[r, c] = 100
 
         return inflated
     
@@ -59,7 +67,19 @@ class CostMapNode(Node):
         #  [ 3 3 3 X 3 2]]
         # Cost_radius indicates the number of cells around obstacles with costs greater than zero.
         # Just for visualization purposes, the cost is multiplied by 4
-        
+        for i in range(height):
+            for j in range(width):
+                if static_map[i, j] == 100:
+                    if static_map[i+1, j] == 100 and static_map[i-1, j] == 100 and static_map[i, j+1] == 100 and static_map[i, j-1] == 100:
+                        continue
+
+                    for k1 in range(-cost_radius, cost_radius + 1):
+                        for k2 in range(-cost_radius, cost_radius + 1):
+                            if (i+k1) < 0 or (i+k1) >= height or (j+k2) < 0 or (j+k2) >= width or static_map[i+k1, j+k2] == 100:
+                                continue
+
+                            cost = 4 * (cost_radius - max(abs(k1), abs(k2)) + 1)
+                            cost_map[i+k1, j+k2] = max(cost, cost_map[i+k1, j+k2])
         return cost_map
 
     def callback_inflated_map(self, request, response):
