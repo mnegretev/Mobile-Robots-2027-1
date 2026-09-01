@@ -1,4 +1,4 @@
-/*
+*
  * MOBILE ROBOTS - FI-UNAM, 2027-1
  * CLUSTERING BY K-MEANS
  * Instructions:
@@ -15,7 +15,7 @@
 #include "random_numbers/random_numbers.h"
 #include "visualization_msgs/msg/marker.hpp"
 
-#define FULL_NAME "FULL NAME"
+#define FULL_NAME "Omar Rosario Carrasco"
 
 class KMeansNode : public rclcpp::Node
 {
@@ -76,7 +76,27 @@ public:
 	 * Use as reference the python version of this algorithm.
 	 * Use the declared variables and the Eigen library
 	 */
-	
+	for(size_t i=0; i < new_centroids.size(); i++)
+	    new_centroids[i] = Eigen::Vector2d::Zero();
+
+	for(size_t i=0; i < points.size(); i++){
+	    double min_dist = std::numeric_limits<double>::max();
+	    size_t idx = 0;
+	    for(size_t j=0; j < centroids.size(); j++){
+		double d = (points[i] - centroids[j]).norm();
+		if(d < min_dist){
+		    min_dist = d;
+		    idx = j;
+		}
+	    }
+	    new_centroids[idx] += points[i];
+	    counters[idx]++;
+	}
+
+	for(size_t i=0; i < new_centroids.size(); i++){
+	    if(counters[i] > 0)
+		new_centroids[i] /= (double)counters[i];
+	}
 	/*
 	 * END OF TODO
 	 */
@@ -151,7 +171,14 @@ public:
 	     * Use as reference the python version of this algorithm.
 	     * Use the declared variables and the Eigen library
 	     */
-	    
+	    std::vector<Eigen::Vector2d> new_centroids = recalculate_centroids(centroids, P);
+	    max_dist = 0.0;
+	    for(size_t i=0; i < centroids.size(); i++){
+		double d = (centroids[i] - new_centroids[i]).norm();
+		if(d > max_dist)
+		    max_dist = d;
+	    }
+	    centroids = new_centroids;
 	    /*
 	     * END OF TODO
 	     */
