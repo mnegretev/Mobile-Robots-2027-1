@@ -15,7 +15,7 @@
 #include "random_numbers/random_numbers.h"
 #include "visualization_msgs/msg/marker.hpp"
 
-#define FULL_NAME "FULL NAME"
+#define FULL_NAME "Perez Salazar Alfredo"
 
 class KMeansNode : public rclcpp::Node
 {
@@ -76,6 +76,32 @@ public:
 	 * Use as reference the python version of this algorithm.
 	 * Use the declared variables and the Eigen library
 	 */
+
+	 for (int i = 0; i<centroids.size();i++){
+		new_centroids[i]=Eigen::Vector2d::Zero();
+		counters[i]=0;
+	 }
+	 for(const Eigen::Vector2d& p : points){
+		int minimo_idx = 0;
+		double minima_dist = (p - centroids[0]).norm();
+		for (int i = 1; i < centroids.size(); i++){
+			double distancia = (p-centroids[i]).norm();
+			if (distancia < minima_dist){
+				minima_dist = distancia;
+				minimo_idx =i;
+			}
+		}
+		new_centroids[minimo_idx] += p;
+		counters[minimo_idx]++;
+	 }
+
+	 for (int i = 0; i< centroids.size();i++){
+		if(counters[i]>0){
+			new_centroids[i] /= static_cast<double>(counters[i]);
+		}else{
+			new_centroids[i] = centroids[i];
+		}
+	 }
 	
 	/*
 	 * END OF TODO
@@ -151,7 +177,18 @@ public:
 	     * Use as reference the python version of this algorithm.
 	     * Use the declared variables and the Eigen library
 	     */
-	    
+
+		std::vector<Eigen::Vector2d> new_centroids =recalculate_centroids(centroids,P);
+	    max_dist = 0.0;
+		for (int i=0;i <centroids.size(); i++) {
+            double distancia = (centroids[i]-new_centroids[i]).norm(); 
+            if (distancia > max_dist) {
+                max_dist = distancia;
+            }
+        }
+
+		centroids = new_centroids;
+
 	    /*
 	     * END OF TODO
 	     */
