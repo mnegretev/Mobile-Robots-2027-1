@@ -1,0 +1,26 @@
+  [31morigin/HEAD[m -> origin/main
+  [31morigin/Mendez_Gomez[m
+  [31morigin/aldo_solorio[m
+  [31morigin/banos_reyes[m
+  [31morigin/bello_jose[m
+  [31morigin/castillo_valles[m
+  [31morigin/fuentes_ramirez[m
+  [31morigin/garcia_lerma[m
+  [31morigin/guerrero_nieva[m
+  [31morigin/main[m
+  [31morigin/martinez_cruz[m
+  [31morigin/medrano_solano[m
+  [31morigin/mendez_gomez[m
+  [31morigin/orihuela_castillo[m
+  [31morigin/perez_cortes[m
+  [31morigin/perez_rojo[m
+  [31morigin/perez_salazar[m
+  [31morigin/quintanar_ramirez[m
+  [31morigin/ramos_sanchez[m
+  [31morigin/rios_barba[m
+  [31morigin/romero_soto[m
+  [31morigin/rosario_carrasco[m
+  [31morigin/santos_vicente[m
+  [31morigin/santoyo_arellano[m
+  [31morigin/segovia_merlin[m
+  [31morigin/villasenor_roman[m
