@@ -11,6 +11,11 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+# MuJoCo
+set(MUJOCO_DIR "/home/nath-perez-cortes/Descargas/mujoco-3.8.0")
+include_directories(${MUJOCO_DIR}/include)
+link_directories(${MUJOCO_DIR}/lib)
+
 
 add_executable(humanoid_simul src/humanoid_simul.cpp)
 target_include_directories(humanoid_simul PUBLIC
