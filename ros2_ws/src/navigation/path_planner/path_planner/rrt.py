@@ -20,7 +20,7 @@ import numpy
 import heapq
 import math
 
-NAME = "FULL NAME"
+NAME = "Raymundo Romero Soto"
 
 class TreeNode:
     def __init__(self, x, y, parent=None):
@@ -101,7 +101,16 @@ class RRTNode(Node):
         #       set new node as parent of goal node
         #   increment attempts
         #
-        
+        while goal_node.parent is None and max_attempts > 0:
+            [x, y] = self.get_random_q(grid_map)
+            nearest_node = self.get_nearest_node(tree, x, y)
+            new_node = self.get_new_node(nearest_node, x, y, epsilon)
+            if not self.check_collision(nearest_node, new_node, grid_map, epsilon):
+                nearest_node.children.append(new_node)
+                if not self.check_collision(new_node, goal_node, grid_map, epsilon):
+                    new_node.children.append(goal_node)
+                    goal_node.parent = new_node 
+            max_attempts -= 1
         #
         # END OF TODO
         #
@@ -152,14 +161,27 @@ class RRTNode(Node):
         self.get_logger().info("Planning by RRT from " + str_data)
         
         start_time = self.get_clock().now()
-        tree, path = self.rrt(sx, sy, gx, gy, self.grid_map, epsilon, max_attempts)
-        end_time   = self.get_clock().now()
         
+        # --- INICIO DEL BUCLE DE REINTENTOS ---
+        path = []
+        tree = None
+        reintentos = 0
+        MAX_REINTENTOS_GLOBALES = 500 # Puedes cambiar este límite al número que desees
+        
+        while len(path) <= 1 and reintentos < MAX_REINTENTOS_GLOBALES:
+            reintentos += 1
+            tree, path = self.rrt(sx, sy, gx, gy, self.grid_map, epsilon, max_attempts)
+            if len(path) <= 1 and reintentos < MAX_REINTENTOS_GLOBALES:
+                self.get_logger().warn(f"Intento {reintentos} fallido. Reintentando...")
+
+        end_time = self.get_clock().now()
         delta_ms = (end_time.nanoseconds - start_time.nanoseconds)/1e6
+        
         if len(path) > 1:
-            self.get_logger().info("Path planned after " + str(delta_ms) + " ms")
+            self.get_logger().info(f"Path planned after {delta_ms} ms (Logrado en {reintentos} intento(s))")
         else:
-            self.get_logger().info("Cannot plan path from  " + str([sx, sy])+" to "+str([gx, gy]) + " :'(")
+            self.get_logger().error(f"Cannot plan path from {sx},{sy} to {gx},{gy} after {reintentos} intentos globales :'(")
+        # --- FIN DEL BUCLE DE REINTENTOS ---
         
         
         self.msg_tree = self.get_tree_marker(tree)
