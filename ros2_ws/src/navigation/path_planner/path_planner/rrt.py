@@ -19,8 +19,9 @@ from collections import deque
 import numpy
 import heapq
 import math
+import os
 
-NAME = "FULL NAME"
+NAME = "Luis Yehosua Oriohuela Castillo"
 
 class TreeNode:
     def __init__(self, x, y, parent=None):
@@ -101,7 +102,16 @@ class RRTNode(Node):
         #       set new node as parent of goal node
         #   increment attempts
         #
-        
+        while goal_node.parent is None and max_attempts > 0:
+            [x,y] = self.get_random_q(grid_map)
+            nearest_node = self.get_nearest_node(tree, x, y)
+            new_node     = self.get_new_node(nearest_node, x, y, epsilon)
+            if not self.check_collision(nearest_node, new_node, grid_map, epsilon):
+                nearest_node.children.append(new_node)
+                if not self.check_collision(new_node, goal_node, grid_map, epsilon):
+                    new_node.children.append(goal_node)
+                    goal_node.parent = new_node
+            max_attempts -= 1
         #
         # END OF TODO
         #
@@ -156,12 +166,26 @@ class RRTNode(Node):
         end_time   = self.get_clock().now()
         
         delta_ms = (end_time.nanoseconds - start_time.nanoseconds)/1e6
+        exito_ruta = 1 if len(path) > 1 else 0
         if len(path) > 1:
             self.get_logger().info("Path planned after " + str(delta_ms) + " ms")
         else:
             self.get_logger().info("Cannot plan path from  " + str([sx, sy])+" to "+str([gx, gy]) + " :'(")
         
+        #Tablas
+        archivo_txt = "resultados_rrt.txt"
         
+        # Si el archivo no existe, lo creamos y le ponemos los encabezados
+        if not os.path.exists(archivo_txt):
+            with open(archivo_txt, 'w', encoding="utf-8") as f:
+                # Encabezados con anchos fijos para que parezca tabla
+                f.write(f"{'Inicio X':<10} | {'Inicio Y':<10} | {'Meta X':<10} | {'Meta Y':<10} | {'Epsilon':<8} | {'N (Max)':<8} | {'Tiempo (ms)':<15} | {'Ruta Encontrada'}\n")
+                f.write("-" * 110 + "\n")
+                
+        # Agregamos la nueva fila al final del archivo
+        with open(archivo_txt, 'a', encoding="utf-8") as f:
+            f.write(f"{sx:<10.3f} | {sy:<10.3f} | {gx:<10.3f} | {gy:<10.3f} | {epsilon:<8.2f} | {max_attempts:<8} | {delta_ms:<15.2f} | {exito_ruta}\n")
+
         self.msg_tree = self.get_tree_marker(tree)
         self.msg_path = Path()
         self.msg_path.header.frame_id = "map"
