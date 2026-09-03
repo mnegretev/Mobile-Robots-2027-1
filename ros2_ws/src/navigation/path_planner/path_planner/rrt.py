@@ -19,8 +19,9 @@ from collections import deque
 import numpy
 import heapq
 import math
+import time
 
-NAME = "FULL NAME"
+NAME = "Baños Reyes Renata"
 
 class TreeNode:
     def __init__(self, x, y, parent=None):
@@ -81,6 +82,7 @@ class RRTNode(Node):
         return False
 
     def rrt(self, start_x, start_y, goal_x, goal_y, grid_map, epsilon, max_attempts):
+        inicio = time.perf_counter()
         tree = TreeNode(start_x, start_y, None)
         goal_node = TreeNode(goal_x, goal_y, None)
     
@@ -101,7 +103,19 @@ class RRTNode(Node):
         #       set new node as parent of goal node
         #   increment attempts
         #
-        
+        while goal_node.parent is None and max_attempts > 0:
+            [x, y] = self.get_random_q(grid_map)
+            nearest_node = self.get_nearest_node(tree, x, y)
+            new_node = self.get_new_node(nearest_node, x, y, epsilon)
+
+            if not self.check_collision(nearest_node, new_node, grid_map, epsilon):
+                nearest_node.children.append(new_node)
+
+                if not self.check_collision(new_node, goal_node, grid_map, epsilon):
+                    new_node.children.append(goal_node)
+                    goal_node.parent = new_node
+
+            max_attempts -= 1
         #
         # END OF TODO
         #
@@ -109,6 +123,11 @@ class RRTNode(Node):
         while goal_node is not None:
             path.insert(0, [goal_node.x, goal_node.y])
             goal_node = goal_node.parent
+
+        fin = time.perf_counter()
+        tiempo = fin - inicio
+        print("Tiempo de ejecución del algoritmo RRT: ", tiempo, "segundos")
+
         return tree, path
 
     def get_tree_marker(self,tree):
