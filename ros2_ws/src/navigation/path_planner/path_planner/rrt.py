@@ -20,7 +20,7 @@ import numpy
 import heapq
 import math
 
-NAME = "FULL NAME"
+NAME = "Marco Ruben Guerrero Nieva"
 
 class TreeNode:
     def __init__(self, x, y, parent=None):
@@ -101,7 +101,16 @@ class RRTNode(Node):
         #       set new node as parent of goal node
         #   increment attempts
         #
-        
+        while goal_node.parent is None and max_attempts > 0:
+            [x, y] = self.get_random_q(grid_map)
+            nearest_node = self.get_nearest_node(tree, x, y)
+            new_node = self.get_new_node(nearest_node, x, y, epsilon)
+            if not self.check_collision(nearest_node, new_node, grid_map, epsilon):
+                nearest_node.children.append(new_node)
+                if not self.check_collision(new_node, goal_node, grid_map, epsilon):
+                    new_node.children.append(goal_node)
+                    goal_node.parent = new_node
+            max_attempts -= 1
         #
         # END OF TODO
         #
