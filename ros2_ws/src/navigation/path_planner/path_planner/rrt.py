@@ -20,7 +20,7 @@ import numpy
 import heapq
 import math
 
-NAME = "FULL NAME"
+NAME = "Leonardo Santos Vicente"
 
 class TreeNode:
     def __init__(self, x, y, parent=None):
@@ -101,7 +101,123 @@ class RRTNode(Node):
         #       set new node as parent of goal node
         #   increment attempts
         #
-        
+        contador = 0
+        resultados = []
+
+        def imprimir_tabla():
+            print("\033c", end="")
+
+            print("=" * 75)
+            print("                         RESULTADOS RRT")
+            print("=" * 75)
+            print(
+                f"{'N°':<5}"
+                f"{'X':<10}"
+                f"{'Y':<10}"
+                f"{'DIST.':<10}"
+                f"{'COLISIÓN':<12}"
+                f"{'META':<10}"
+                f"{'RESULTADO':<15}"
+            )
+            print("-" * 75)
+
+            for resultado in resultados:
+                print(
+                    f"{resultado['numero']:<5}"
+                    f"{resultado['x']:<10.2f}"
+                    f"{resultado['y']:<10.2f}"
+                    f"{resultado['distancia']:<10.2f}"
+                    f"{resultado['colision']:<12}"
+                    f"{resultado['meta']:<10}"
+                    f"{resultado['resultado']:<15}"
+                )
+
+            print("=" * 75)
+            print(f"Intentos realizados: {contador}")
+            print("=" * 75)
+
+        while goal_node.parent is None and max_attempts > 0:
+
+            contador += 1
+
+            # Generar punto aleatorio
+            [x, y] = self.get_random_q(grid_map)
+
+            # Buscar nodo más cercano
+            nearest_node = self.get_nearest_node(tree, x, y)
+
+            # Crear nuevo nodo
+            new_node = self.get_new_node(
+                nearest_node,
+                x,
+                y,
+                epsilon
+            )
+
+            # Distancia entre el nodo nuevo y el nodo más cercano
+            distancia = (
+                (new_node.x - nearest_node.x) ** 2 +
+                (new_node.y - nearest_node.y) ** 2
+            ) ** 0.5
+
+            # Revisar colisión entre nodo cercano y nodo nuevo
+            collision_new = self.check_collision(
+                nearest_node,
+                new_node,
+                grid_map,
+                epsilon
+            )
+
+            if not collision_new:
+
+                nearest_node.children.append(new_node)
+
+                # Revisar si se puede conectar con la meta
+                collision_goal = self.check_collision(
+                    new_node,
+                    goal_node,
+                    grid_map,
+                    epsilon
+                )
+
+                if not collision_goal:
+
+                    new_node.children.append(goal_node)
+                    goal_node.parent = new_node
+
+                    meta = "SI"
+                    resultado = "META ENCONTRADA"
+
+                else:
+
+                    meta = "NO"
+                    resultado = "Nodo agregado"
+
+                colision = "NO"
+
+            else:
+
+                collision_goal = False
+                meta = "NO"
+                colision = "SI"
+                resultado = "Colisión"
+
+            # Registrar resultado de la iteración
+            resultados.append({
+                "numero": contador,
+                "x": x,
+                "y": y,
+                "distancia": distancia,
+                "colision": colision,
+                "meta": meta,
+                "resultado": resultado
+            })
+
+            # Mostrar tabla actualizada
+            imprimir_tabla()
+
+            # Disminuir número de intentos
+            max_attempts -= 1
         #
         # END OF TODO
         #
