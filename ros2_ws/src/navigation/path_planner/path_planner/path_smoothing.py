@@ -13,7 +13,7 @@ from geometry_msgs.msg import Pose, PoseStamped, Point
 from navig_msgs.srv import ProcessPath
 import numpy
 
-NAME = "FULL NAME"
+NAME = "LEONARDO ALEJANDRO GARCIA LERMA"
 
 class PathSmoothingNode(Node):
     def smooth_path(self, Q, w1, w2, max_steps):
@@ -30,7 +30,28 @@ class PathSmoothingNode(Node):
         # The smoothed path must have the same shape.
         # Return the smoothed path.
         #
-
+        
+        # Limpiamos la inicialización defectuosa de 'inf' de la plantilla original
+        nabla = numpy.zeros_like(Q, dtype=float)
+        steps = 0
+        norm_nabla = float('inf') # Controlamos la condición de entrada al while aquí
+        
+        if len(P) >= 3:
+            while norm_nabla > tol and steps < max_steps:
+                for i in range(1, len(P) - 1):
+                    # Aplicamos la fórmula del gradiente
+                    nabla[i] = w1 * (2 * P[i] - P[i-1] - P[i+1]) + w2 * (P[i] - Q[i])
+                
+                # Forzamos 0 en los extremos para anclar inicio y fin
+                nabla[0] = 0.0
+                nabla[-1] = 0.0
+                
+                # Actualización de la ruta
+                P = P - (epsilon * nabla)
+                
+                # Recalcular la norma para la condición del while
+                norm_nabla = numpy.linalg.norm(nabla)
+                steps += 1
         #
         # END OF TODO
         #
