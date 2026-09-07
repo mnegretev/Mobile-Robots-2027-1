@@ -183,6 +183,56 @@ class RRTNode(Node):
             self.msg_path.poses.append(pose_stamped)
         resp.plan = self.msg_path
         return resp
+    
+    '''def callback_rrt(self, req, resp):
+        [sx, sy] = [req.start.pose.position.x, req.start.pose.position.y]
+        [gx, gy] = [req.goal .pose.position.x, req.goal .pose.position.y]
+        max_attempts = self.get_parameter('N').get_parameter_value().integer_value
+
+        epsilons = [0.3, 0.5, 0.7, 0.9, 0.1]
+
+        self.get_logger().info(
+            f"Planning by RRT from {[sx, sy]} to {[gx, gy]} with N={max_attempts} attempts (benchmark 10x por epsilon)"
+        )
+
+        for epsilon in epsilons:
+            times = []
+            successes = 0
+            last_tree = None
+            last_path = []
+
+            for i in range(10):
+                start_time = self.get_clock().now()
+                tree, path = self.rrt(sx, sy, gx, gy, self.grid_map, epsilon, max_attempts)
+                end_time = self.get_clock().now()
+                delta_ms = (end_time.nanoseconds - start_time.nanoseconds) / 1e6
+                times.append(delta_ms)
+
+                if len(path) > 1:
+                    successes += 1
+
+                last_tree = tree
+                last_path = path
+
+            avg_time = sum(times) / len(times)
+
+            self.get_logger().info(
+                f"epsilon={epsilon} | tiempo prom={avg_time:.3f} ms | exitos={successes}/10 "
+                f"| punto final=({gx},{gy}) | N={max_attempts}"
+            )
+
+        self.msg_tree = self.get_tree_marker(last_tree)
+        self.msg_path = Path()
+        self.msg_path.header.frame_id = "map"
+        self.msg_path.header.stamp = self.get_clock().now().to_msg()
+        self.msg_path.poses = []
+        for [x, y] in last_path:
+            pose_stamped = PoseStamped()
+            pose_stamped.pose.position.x = x
+            pose_stamped.pose.position.y = y
+            self.msg_path.poses.append(pose_stamped)
+        resp.plan = self.msg_path
+        return resp'''
 
     def callback_timer(self):
         self.pub_path.publish(self.msg_path)
