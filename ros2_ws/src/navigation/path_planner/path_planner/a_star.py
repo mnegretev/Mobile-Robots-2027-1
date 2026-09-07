@@ -19,7 +19,7 @@ import numpy
 import heapq
 import math
 
-NAME = "FULL NAME"
+NAME = "SOLORIO GONZALEZ ALDO BRUNO"
 
 class AStarNode(Node):
     def a_star(self, start_r, start_c, goal_r, goal_c, grid_map, cost_map, use_diagonals):
@@ -62,6 +62,53 @@ class AStarNode(Node):
         #             mark r,c as 'in_open_list'
         #             add r,c to open list (check heapq.heappush)
         #
+
+        f_values[start_r, start_c] = 0
+
+        while len(open_list) > 0 and [row, col] != [goal_r, goal_c]:
+            current_f, current_node = heapq.heappop(open_list)
+            [row, col] = current_node
+
+            # Ignorar entradas antiguas o nodos que ya fueron procesados
+            if in_closed_list[row, col]:
+                continue
+            if current_f > f_values[row, col]:
+                continue
+
+            in_open_list[row, col] = False
+            in_closed_list[row, col] = True
+
+            for [row_offset, col_offset, distance] in adjacents:
+                r = row + row_offset
+                c = col + col_offset
+
+                # Descartar vecinos fuera del mapa
+                if r < 0 or r >= height or c < 0 or c >= width:
+                    continue
+
+                # Descartar celdas ocupadas, desconocidas o ya procesadas
+                if grid_map[r, c] != 0 or in_closed_list[r, c]:
+                    continue
+
+                # Costo acumulado desde el inicio hasta el vecino
+                g = g_values[row, col] + distance + cost_map[r, c]
+
+                # Heurística indicada en la presentación
+                if use_diagonals:
+                    h = math.sqrt((goal_r - r)**2 + (goal_c - c)**2)
+                else:
+                    h = abs(goal_r - r) + abs(goal_c - c)
+
+                f = g + h
+
+                # Actualizar el vecino si se encontró un camino de menor costo
+                if g < g_values[r, c]:
+                    g_values[r, c] = g
+                    f_values[r, c] = f
+                    parent_nodes[r, c] = [row, col]
+
+                    in_open_list[r, c] = True
+                    heapq.heappush(open_list, (f, [r, c]))
 
         #
         # END OF WHILE
