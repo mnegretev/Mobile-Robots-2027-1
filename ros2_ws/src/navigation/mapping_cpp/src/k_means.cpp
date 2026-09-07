@@ -10,12 +10,13 @@
 #include <cstdio>
 #include <limits>
 #include <Eigen/Dense>
+#include <algorithm>
 #include "rclcpp/rclcpp.hpp"
 #include "nav_msgs/srv/get_map.hpp"
 #include "random_numbers/random_numbers.h"
 #include "visualization_msgs/msg/marker.hpp"
 
-#define FULL_NAME "FULL NAME"
+#define FULL_NAME "PEREZ CORTES NATHAN"
 
 class KMeansNode : public rclcpp::Node
 {
@@ -76,7 +77,24 @@ public:
 	 * Use as reference the python version of this algorithm.
 	 * Use the declared variables and the Eigen library
 	 */
-	
+	std::vector<Eigen::Vector2d> clusters(centroids.size(), Eigen::Vector2d::Zero());
+
+	for (const auto& p : points) {
+	    int idx = 0;
+	    double min_dist = (p - centroids[0]).norm();
+	    for (size_t i = 1; i < centroids.size(); ++i) {
+		double dist = (p - centroids[i]).norm();
+		if (dist < min_dist) {
+		    min_dist = dist;
+		    idx = static_cast<int>(i);
+		}
+	    }
+	    clusters[idx] = clusters[idx] + p;
+	    counters[idx] += 1;
+	}
+	for (size_t i = 0; i < centroids.size(); ++i) {
+	    new_centroids[i] = clusters[i] / static_cast<double>(counters[i]);
+	}
 	/*
 	 * END OF TODO
 	 */
@@ -140,6 +158,7 @@ public:
 	pub_marker->publish(mrk);
 
 	double max_dist = std::numeric_limits<double>::max();
+	int iterations = 0;
 	while(rclcpp::ok() && max_dist > this->tol){
 	    pub_marker->publish(mrk);
 	    rclcpp::spin_some(this->get_node_base_interface());
@@ -151,7 +170,16 @@ public:
 	     * Use as reference the python version of this algorithm.
 	     * Use the declared variables and the Eigen library
 	     */
-	    
+    	RCLCPP_INFO(this->get_logger(), "Recalculating centroids");
+	    std::vector<Eigen::Vector2d> new_centroids = recalculate_centroids(centroids, P);
+	    max_dist = 0.0;
+	    for (size_t i = 0; i < centroids.size(); ++i) {
+		double dist = (centroids[i] - new_centroids[i]).norm();
+		max_dist = std::max(max_dist, dist);
+	    }
+	    centroids = new_centroids;
+	    iterations += 1;
+	    pub_marker->publish(get_centroids_marker(centroids));
 	    /*
 	     * END OF TODO
 	     */
