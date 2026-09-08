@@ -16,10 +16,10 @@ from nav_msgs.srv import *
 from builtin_interfaces.msg import Duration
 from collections import deque
 import numpy
-import heapq
+import heapq #Proporciona la implementación de la cola de prioridad (heap)
 import math
 
-NAME = "FULL NAME"
+NAME = "Baños Reyes Renata"
 
 class AStarNode(Node):
     def a_star(self, start_r, start_c, goal_r, goal_c, grid_map, cost_map, use_diagonals):
@@ -62,6 +62,36 @@ class AStarNode(Node):
         #             mark r,c as 'in_open_list'
         #             add r,c to open list (check heapq.heappush)
         #
+        while len(open_list) > 0 and (row != goal_r or col != goal_c): #Mientras la lista abierta no este vacia y el nodo actual no sea la meta hacer:
+            
+            [f,[row,col]] = heapq.heappop(open_list) #Saca y devuelve el nodo con menor f de la lista abierta 
+            in_closed_list[row, col] = True #Marca el nodo actual en la lista cerrada
+            
+            for [r_offset, c_offset, cost] in adjacents: #Para cada nodo adyacente hacer:
+
+                r = row + r_offset #Calcula la fila del nodo adyacente
+                c = col + c_offset #Calcula la columna del nodo adyacente
+
+                if r < 0 or r >= height or c < 0 or c >= width or grid_map[r,c] >= 100 or grid_map[r,c] < 0 or in_closed_list[r,c]: #Si el nodo adyacente esta fuera del mapa, ocupado, desconocido o en la lista cerrada continuar
+                    continue
+
+                g = g_values[row, col] + cost + cost_map[r,c] #Calcula el g del nodo adyacente como la suma del g del nodo actual, el costo de moverse al nodo adyacente y el costo del nodo adyacente
+
+                if use_diagonals: #Si se usan diagonales calcular la heuristica como la distancia euclidiana
+                    h = math.sqrt((goal_r - r)**2 + (goal_c - c)**2)
+                else: #Si no se usan diagonales calcular la heuristica como la distancia Manhattan
+                    h = abs(goal_r - r) + abs(goal_c - c)
+
+                f = g + h #Calcula el f del nodo adyacente como la suma del g y la heuristica
+
+                if g < g_values[r, c]: #Si el g del nodo adyacente es menor que el g almacenado
+                    g_values[r,c] = g
+                    f_values[r,c] = f
+                    parent_nodes[r,c] = [row, col] #Establece el nodo actual como padre del nodo adyacente
+
+                if not in_open_list[r,c]: #Si el nodo adyacente no esta en la lista abierta
+                    in_open_list[r,c] = True #Marca el nodo adyacente en la lista abierta
+                    heapq.heappush(open_list, (f, [r,c])) #Agrega el nodo adyacente a la lista abierta
 
         #
         # END OF WHILE
