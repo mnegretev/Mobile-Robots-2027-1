@@ -45,24 +45,54 @@ class AStarNode(Node):
         # Map is considered to be a 2D array and start and goal positions
         # are given as row-col pairs. You can follow these steps:
         #
-        # WHILE open list is not empty and current is different from goal:
-        #     Get current node [row,col] from open list (see heapq.heappop function)
-        #     Mark current node as 'in_closed_list'
-        #     For [r,c,cost] in adjacent nodes:
-        #         Get r,c indices of neighbours of current node (check content of adjacents)
-        #         Discard if r,c is out of map, occupied, unknonw or in closed list, and continue
-        #         get a g-value g as: g-value of current node + dist + cost of neighbour r,c
-        #         Calculate heuristic 
-        #         Calculate f-value
-        #         IF g < g_value of neighbour r,c:
-        #             set g as g_value of neighbour r,c
-        #             set f as f_value of neighbour r,c
-        #             SET current node row,col as parent of neighbour r,c
-        #         If neighbour r,c is not in open list:
-        #             mark r,c as 'in_open_list'
-        #             add r,c to open list (check heapq.heappush)
-        #
+        # Heurística euclidiana o euclidiana ponderada al objetivo
+        f_values[start_r, start_c] = math.sqrt((goal_r - start_r)**2 + (goal_c - start_c)**2)
 
+        while len(open_list) > 0:
+            # Obtener nodo con menor f_value
+            current_f, [row, col] = heapq.heappop(open_list)
+            in_open_list[row, col] = False
+
+            # Si llegamos al nodo meta, terminamos la búsqueda
+            if row == goal_r and col == goal_c:
+                break
+
+            # Si el nodo ya fue expandido (por entradas repetidas en heap), continuamos
+            if in_closed_list[row, col]:
+                continue
+
+            in_closed_list[row, col] = True
+
+            for [dr, dc, dist] in adjacents:
+                nr = row + dr
+                nc = col + dc
+
+                # 1. Descartar si está fuera del mapa
+                if nr < 0 or nr >= height or nc < 0 or nc >= width:
+                    continue
+
+                # 2. Descartar si está ocupado (> 50), desconocido (< 0) o ya cerrado
+                if grid_map[nr, nc] > 50 or grid_map[nr, nc] < 0 or in_closed_list[nr, nc]:
+                    continue
+
+                # 3. Calcular nuevo g-value sumando distancia de paso y costo del mapa
+                additional_cost = float(cost_map[nr, nc]) if cost_map is not None else 0.0
+                tentative_g = g_values[row, col] + dist + additional_cost
+
+                # 4. Si encontramos un mejor camino hacia el vecino
+                if tentative_g < g_values[nr, nc]:
+                    g_values[nr, nc] = tentative_g
+                    
+                    # Heurística euclidiana
+                    heuristic = math.sqrt((goal_r - nr)**2 + (goal_c - nc)**2)
+                    tentative_f = tentative_g + heuristic
+                    f_values[nr, nc] = tentative_f
+                    
+                    parent_nodes[nr, nc] = [row, col]
+
+                    if not in_open_list[nr, nc]:
+                        in_open_list[nr, nc] = True
+                        heapq.heappush(open_list, (tentative_f, [nr, nc]))
         #
         # END OF WHILE
         #
