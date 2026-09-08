@@ -19,7 +19,7 @@ import numpy
 import heapq
 import math
 
-NAME = "FULL NAME"
+NAME = "Lizeth Martinez Cruz"
 
 class AStarNode(Node):
     def a_star(self, start_r, start_c, goal_r, goal_c, grid_map, cost_map, use_diagonals):
@@ -62,7 +62,43 @@ class AStarNode(Node):
         #             mark r,c as 'in_open_list'
         #             add r,c to open list (check heapq.heappush)
         #
+        while len(open_list) > 0 and [row, col] != [goal_r, goal_c]:
 
+            current = heapq.heappop(open_list)
+            row = current[1][0]
+            col = current[1][1]
+
+            if in_closed_list[row, col]:
+                continue
+
+            in_closed_list[row, col] = True
+
+            for adjacent in adjacents:
+                r = row + adjacent[0]
+                c = col + adjacent[1]
+                dist = adjacent[2]
+
+                if r < 0 or r >= height or c < 0 or c >= width:
+                    continue
+
+                if grid_map[r, c] != 0:
+                    continue
+
+                if in_closed_list[r, c]:
+                    continue
+
+                g = g_values[row, col] + dist + cost_map[r, c]
+                h = math.sqrt((goal_r - r)**2 + (goal_c - c)**2)
+                f = g + h
+
+                if g < g_values[r, c]:
+                    g_values[r, c] = g
+                    f_values[r, c] = f
+                    parent_nodes[r, c] = [row, col]
+
+                    if not in_open_list[r, c]:
+                        in_open_list[r, c] = True
+                        heapq.heappush(open_list, (f, [r, c]))
         #
         # END OF WHILE
         #
