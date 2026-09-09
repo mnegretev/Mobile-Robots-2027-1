@@ -19,7 +19,7 @@ import numpy
 import heapq
 import math
 
-NAME = "FULL NAME"
+NAME = "German Segovia Merlin 2027--1"
 
 class AStarNode(Node):
     def a_star(self, start_r, start_c, goal_r, goal_c, grid_map, cost_map, use_diagonals):
@@ -62,7 +62,50 @@ class AStarNode(Node):
         #             mark r,c as 'in_open_list'
         #             add r,c to open list (check heapq.heappush)
         #
+        while open_list:
+            # Se Eextrae el nodo con menor f
+            f_current, [row, col] = heapq.heappop(open_list)
 
+            # Saltar si ya fue cerrado
+            if in_closed_list[row, col]:
+                continue
+
+            # Marcar como cerrado
+            in_closed_list[row, col] = True
+
+            # Terminar si llegamos al goal
+            if row == goal_r and col == goal_c:
+                break
+
+            # Revisar vecinos
+            for dr, dc, dist in adjacents:
+                r = row + dr
+                c = col + dc
+
+                # Fuera del mapa
+                if r < 0 or r >= height or c < 0 or c >= width:
+                    continue
+
+                # Ocupado, desconocido o ya cerrado
+                if grid_map[r, c] != 0 or in_closed_list[r, c]:
+                    continue
+
+                # Calcular g
+                g = g_values[row, col] + dist + float(cost_map[r, c])
+
+                # Heuristica
+                h = math.sqrt((goal_r - r)**2 + (goal_c - c)**2)
+                f = g + h
+
+                # Mejor camino encontrado
+                if g < g_values[r, c]:
+                    g_values[r, c] = g
+                    f_values[r, c] = f
+                    parent_nodes[r, c] = [row, col]
+
+                    # Agregar a open list
+                    in_open_list[r, c] = True
+                    heapq.heappush(open_list, (f, [r, c]))
         #
         # END OF WHILE
         #
