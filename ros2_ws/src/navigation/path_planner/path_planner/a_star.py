@@ -19,7 +19,7 @@ import numpy
 import heapq
 import math
 
-NAME = "FULL NAME"
+NAME = "Romero Soto Raymundo"
 
 class AStarNode(Node):
     def a_star(self, start_r, start_c, goal_r, goal_c, grid_map, cost_map, use_diagonals):
@@ -62,7 +62,57 @@ class AStarNode(Node):
         #             mark r,c as 'in_open_list'
         #             add r,c to open list (check heapq.heappush)
         #
+        while len(open_list) > 0:
+            # Extraemos el nodo con menor f-value
+            _, [row, col] = heapq.heappop(open_list)
 
+            # Si ya alcanzamos la meta, salimos del ciclo
+            if row == goal_r and col == goal_c:
+                break
+
+            # Si el nodo ya fue procesado, lo ignoramos
+            if in_closed_list[row, col]:
+                continue
+
+            # Marcamos el nodo actual como visitado
+            in_closed_list[row, col] = True
+
+            for [dr, dc, move_cost] in adjacents:
+                nr, nc = row + dr, col + dc
+
+                # 1. Validar si está fuera de los límites del mapa
+                if nr < 0 or nr >= height or nc < 0 or nc >= width:
+                    continue
+
+                # 2. Descartar si está ocupado (>0 o !=0 según tu mapa), es desconocido (<0) o está en la lista cerrada
+                cell_value = grid_map[nr, nc]
+                if cell_value != 0 or in_closed_list[nr, nc]:
+                    continue
+
+                # 3. Calcular el costo g acumulado (g actual + costo de movimiento + costo celda)
+                neighbour_cost = cost_map[nr, nc]
+                g_tentative = g_values[row, col] + move_cost + neighbour_cost
+
+                # 4. Si encontramos un mejor camino hacia este vecino
+                if g_tentative < g_values[nr, nc]:
+                    g_values[nr, nc] = g_tentative
+                    
+                    # Distancia Euclidiana como heurística (h) hacia la meta
+                    if use_diagonals:
+                        # Distancia Euclidiana para 8 vecinos (permite movimiento diagonal)
+                        h = math.hypot(goal_r - nr, goal_c - nc)
+                    else:
+                        #Distancia Manhattan para 4 vecinos (obliga a seguir ejes X/Y estrictos)
+                        h = abs(goal_r - nr) + abs(goal_c - nc)
+                    f_values[nr, nc] = g_tentative + h
+
+                    # Guardamos al padre del vecino
+                    parent_nodes[nr, nc] = [row, col]
+
+                    # Si no está en la lista abierta, se añade
+                    if not in_open_list[nr, nc]:
+                        in_open_list[nr, nc] = True
+                        heapq.heappush(open_list, (f_values[nr, nc], [nr, nc]))
         #
         # END OF WHILE
         #
