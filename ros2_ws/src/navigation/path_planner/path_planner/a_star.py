@@ -18,8 +18,9 @@ from collections import deque
 import numpy
 import heapq
 import math
+import os
 
-NAME = "FULL NAME"
+NAME = "Luis Yehosua Orihuela Castillo"
 
 class AStarNode(Node):
     def a_star(self, start_r, start_c, goal_r, goal_c, grid_map, cost_map, use_diagonals):
@@ -40,28 +41,64 @@ class AStarNode(Node):
         g_values    [start_r, start_c] = 0
         [row, col]= [start_r, start_c]   #Current node
         #
+        #
         # TODO:
         # Implement the A* algorithm for path planning
         # Map is considered to be a 2D array and start and goal positions
         # are given as row-col pairs. You can follow these steps:
         #
+
         # WHILE open list is not empty and current is different from goal:
-        #     Get current node [row,col] from open list (see heapq.heappop function)
-        #     Mark current node as 'in_closed_list'
-        #     For [r,c,cost] in adjacent nodes:
-        #         Get r,c indices of neighbours of current node (check content of adjacents)
-        #         Discard if r,c is out of map, occupied, unknonw or in closed list, and continue
-        #         get a g-value g as: g-value of current node + dist + cost of neighbour r,c
-        #         Calculate heuristic 
-        #         Calculate f-value
-        #         IF g < g_value of neighbour r,c:
-        #             set g as g_value of neighbour r,c
-        #             set f as f_value of neighbour r,c
-        #             SET current node row,col as parent of neighbour r,c
-        #         If neighbour r,c is not in open list:
-        #             mark r,c as 'in_open_list'
-        #             add r,c to open list (check heapq.heappush)
-        #
+        while len(open_list) > 0 and [row, col] != [goal_r, goal_c]:
+            
+            # Get current node [row,col] from open list (see heapq.heappop function)
+            _, [row, col] = heapq.heappop(open_list)
+            
+            # Mark current node as 'in_closed_list'
+            in_closed_list[row, col] = True
+            
+            # For [r,c,cost] in adjacent nodes:
+            # (Nota: usaremos dr y dc para los desplazamientos (offsets) indicados en 'adjacents')
+            for [dr, dc, dist] in adjacents:
+                
+                # Get r,c indices of neighbours of current node (check content of adjacents)
+                r, c = row + int(dr), col + int(dc)
+                
+                # Discard if r,c is out of map, occupied, unknonw or in closed list, and continue
+                # (En ROS los mapas de ocupación suelen tener -1 para desconocido y > 50 para ocupado)
+                if r < 0 or r >= height or c < 0 or c >= width or grid_map[r, c] > 50 or grid_map[r, c] < 0 or in_closed_list[r, c]:
+                    continue
+                
+                # get a g-value g as: g-value of current node + dist + cost of neighbour r,c
+                g = g_values[row, col] + dist + cost_map[r, c]
+                
+                # Calculate heuristic
+                # (Se utiliza distancia Euclidiana para heurística)
+                h = math.sqrt((goal_r - r)**2 + (goal_c - c)**2)
+                
+                # Calculate f-value
+                f = g + h
+                
+                # IF g < g_value of neighbour r,c:
+                if g < g_values[r, c]:
+                    
+                    # set g as g_value of neighbour r,c
+                    g_values[r, c] = g
+                    
+                    # set f as f_value of neighbour r,c
+                    f_values[r, c] = f
+                    
+                    # SET current node row,col as parent of neighbour r,c
+                    parent_nodes[r, c] = [row, col]
+                    
+                    # If neighbour r,c is not in open list:
+                    if not in_open_list[r, c]:
+                        
+                        # mark r,c as 'in_open_list'
+                        in_open_list[r, c] = True
+                        
+                        # add r,c to open list (check heapq.heappush)
+                        heapq.heappush(open_list, (f, [r, c]))
 
         #
         # END OF WHILE
@@ -112,6 +149,7 @@ class AStarNode(Node):
         use_diagonals = self.get_parameter('diagonals').get_parameter_value().bool_value
         inflated_grid = numpy.reshape(numpy.asarray(self.inflated_map.data), (info.height, info.width))
         cost_grid     = numpy.reshape(numpy.asarray(self.cost_map.data)    , (info.height, info.width))
+        diagonals = 'true' if use_diagonals == 1 else 'false'
         
         self.get_logger().info("Planning path by A* from " + str([sx, sy])+" to "+str([gx, gy]))
         start_time = self.get_clock().now()
@@ -123,6 +161,19 @@ class AStarNode(Node):
             self.get_logger().info("Path planned after " + str(delta_ms) + " ms with " +  str(len(path)) + " points")
         else:
             self.get_logger().info("Cannot plan path from  " + str([sx, sy])+" to "+str([gx, gy]) + " :'(")
+
+        #Tablas
+        archivo_txt = "resultados_a*.txt"
+                
+        # Si el archivo no existe, lo creamos y le ponemos los encabezados
+        if not os.path.exists(archivo_txt):
+            with open(archivo_txt, 'w', encoding="utf-8") as f:
+                # Encabezados con anchos fijos para que parezca tabla
+                f.write(f"{'Meta X':<10} | {'Meta Y':<10} | {'Diagonals':<15} | {'Tiempo (ms)':<15}\n")
+                f.write("-" * 110 + "\n")
+
+        with open(archivo_txt, 'a', encoding="utf-8") as f:
+                f.write(f"{gx:<10.3f} | {gy:<10.3f} | {diagonals:<15} |{delta_ms:<15.2f}\n")
 
         self.msg_path = self.get_path_msg(path, res, zx, zy)
         resp.plan = self.msg_path
