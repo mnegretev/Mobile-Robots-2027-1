@@ -13,7 +13,7 @@ from geometry_msgs.msg import Pose, PoseStamped, Point
 from navig_msgs.srv import ProcessPath
 import numpy
 
-NAME = "FULL NAME"
+NAME = "Leonardo Santos Vicente"
 
 class PathSmoothingNode(Node):
     def smooth_path(self, Q, w1, w2, max_steps):
@@ -29,8 +29,67 @@ class PathSmoothingNode(Node):
         # [[x0,y0], [x1,y1], ..., [xn,ym]].
         # The smoothed path must have the same shape.
         # Return the smoothed path.
-        #
 
+        # J es un paraboloide, por lo que tiene un mínimo global.
+        # El objetivo del algoritmo es encontrar ese mínimo mediante descenso
+        # del gradiente. Para llegar al mínimo se avanza en dirección contraria
+        # al gradiente, hasta que su magnitud sea suficientemente pequeña.
+        #
+        # La primera y la última coordenada no se modifican porque representan
+        # los extremos de la ruta. Por lo tanto, sus gradientes se mantienen
+        # en cero.
+        nabla[0] = 0
+        nabla[-1] = 0
+
+        steps = 0
+
+        # Se repite el proceso mientras la magnitud del gradiente sea mayor
+        # que la tolerancia y no se haya alcanzado el número máximo de pasos.
+        #
+        # Los puntos interiores de nabla fueron inicializados con infinito,
+        # por lo que el algoritmo entra al while en la primera iteración.
+        while numpy.linalg.norm(nabla) > tol and steps < max_steps:
+
+            # Se recorren únicamente los puntos interiores de la ruta:
+            # desde el segundo punto hasta el penúltimo.
+            #
+            # El primer y último punto NO se incluyen en este algoritmo.
+            for i in range(1, len(Q) - 1):
+
+                # Q representa la ruta original.
+                # P representa la ruta que se va modificando hasta obtener
+                # la ruta suavizada.
+
+                # El gradiente se obtiene al derivar la función de costo J.
+                # Al derivar la sumatoria, por regla de la cadena, aparecen
+                # el punto anterior, el punto actual y el punto siguiente.
+                #
+                # w1 determina cuánto se desea suavizar la trayectoria.
+                # w2 determina cuánto se desea conservar la trayectoria original.
+                #
+                # El primer término busca suavizar la trayectoria haciendo
+                # que el punto actual tenga una posición más cercana a sus
+                # puntos vecinos.
+                #
+                # El segundo término evita que la trayectoria se aleje
+                # demasiado de la ruta original.
+                nabla[i] = (
+                    w1 * (2 * P[i] - P[i - 1] - P[i + 1])
+                    + w2 * (P[i] - Q[i])
+                )
+
+            # Descenso del gradiente:
+            # P se mueve en la dirección contraria al gradiente.
+            #
+            # epsilon representa la distancia pequeña que se avanza
+            # en cada iteración.
+            #
+            # Como nabla[0] y nabla[-1] son cero, los puntos inicial
+            # y final permanecen sin cambios.
+            P = P - epsilon * nabla
+
+            # Se incrementa el contador de pasos.
+            steps += 1
         #
         # END OF TODO
         #
