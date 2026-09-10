@@ -19,7 +19,7 @@ import numpy
 import heapq
 import math
 
-NAME = "FULL NAME"
+NAME = "Leonardo Santos Vicente"
 
 class AStarNode(Node):
     def a_star(self, start_r, start_c, goal_r, goal_c, grid_map, cost_map, use_diagonals):
@@ -34,7 +34,8 @@ class AStarNode(Node):
             adjacents = [[1,0,1],[0,1,1],[-1,0,1],[0,-1,1], [1,1,1.414], [-1,1,1.414], [-1,-1,1.414],[1,-1,1.414]]
         else:
             adjacents = [[1,0,1],[0,1,1],[-1,0,1],[0,-1,1]]
-
+        print("USE DIAGONALS:", use_diagonals)
+        print("ADJACENTS:", adjacents)
         heapq.heappush(open_list, (0, [start_r, start_c]))
         in_open_list[start_r, start_c] = True
         g_values    [start_r, start_c] = 0
@@ -62,7 +63,90 @@ class AStarNode(Node):
         #             mark r,c as 'in_open_list'
         #             add r,c to open list (check heapq.heappush)
         #
+        while len(open_list) > 0 and [row, col] != [goal_r, goal_c]:
 
+            # Obtener de la lista abierta el nodo con el menor valor f.
+            # heapq mantiene en la primera posición el nodo con menor costo.
+            [f_current, current_node] = heapq.heappop(open_list)
+
+            # Obtener la fila y columna del nodo actual.
+            [row, col] = current_node
+
+            # Marcar el nodo actual como parte de la lista cerrada.
+            # Los nodos de la lista cerrada ya fueron procesados.
+            in_closed_list[row, col] = True
+
+            # Recorrer todos los vecinos del nodo actual.
+            # Cada vecino contiene: desplazamiento de fila,
+            # desplazamiento de columna y costo de movimiento.
+            for [row_offset, col_offset, cost] in adjacents:
+
+                # Calcular las coordenadas del nodo vecino.
+                r = row + row_offset
+                c = col + col_offset
+
+                # Si el vecino está fuera del mapa, se ignora.
+                if r < 0 or r >= height or c < 0 or c >= width:
+                    continue
+
+                # Si el nodo es un obstáculo, se ignora.
+                if grid_map[r, c] != 0:
+                    continue
+
+                # Si el nodo tiene información desconocida, se ignora.
+                if grid_map[r, c] == -1:
+                    continue
+
+                # Si el nodo ya se encuentra en la lista cerrada,
+                # no es necesario volver a recorrerlo.
+                if in_closed_list[r, c]:
+                    continue
+
+                # G es el costo acumulado desde el nodo inicial
+                # hasta el nodo vecino.
+                # Se suma el costo G del nodo actual y el costo
+                # necesario para llegar al vecino.
+                g = g_values[row, col] + cost
+
+                # Calcular la heurística h.
+                # Se utiliza la distancia Euclidiana entre el vecino
+                # y el nodo meta.
+                h = ((r - goal_r) ** 2 + (c - goal_c) ** 2) ** 0.5
+
+                # F es el costo total estimado:
+                # f = g + h
+                f = g + h
+
+                # Si el nuevo costo G es menor que el costo G
+                # que tenía registrado el vecino, se actualiza.
+                if g < g_values[r, c]:
+
+                    # Actualizar el costo acumulado G del vecino.
+                    g_values[r, c] = g
+
+                    # Actualizar el costo total F del vecino.
+                    f_values[r, c] = f
+
+                    # El nodo actual se convierte en el padre
+                    # del nodo vecino, ya que se encontró un camino
+                    # de menor costo para llegar a él.
+                    parent_nodes[r, c] = [row, col]
+
+                    # Primero se realizan los cálculos anteriores
+                    # y después se agrega el vecino a la lista abierta.
+                    #
+                    # Si el vecino todavía no estaba en la lista abierta,
+                    # se agrega utilizando heapq.
+                    if not in_open_list[r, c]:
+
+                        # Marcar el vecino como perteneciente
+                        # a la lista abierta.
+                        in_open_list[r, c] = True
+
+                        # Agregar el vecino a la cola de prioridad.
+                        # El primer elemento de la tupla es F,
+                        # por lo que heapq ordenará por el menor F.
+                        heapq.heappush(open_list, (f, [r, c]))
         #
         # END OF WHILE
         #
@@ -110,6 +194,7 @@ class AStarNode(Node):
         [gx, gy] = [req.goal .pose.position.x, req.goal .pose.position.y]
         [zx, zy] = [self.inflated_map.info.origin.position.x, self.inflated_map.info.origin.position.y]
         use_diagonals = self.get_parameter('diagonals').get_parameter_value().bool_value
+        self.get_logger().info("DIAGONALS PARAMETER = " + str(use_diagonals))
         inflated_grid = numpy.reshape(numpy.asarray(self.inflated_map.data), (info.height, info.width))
         cost_grid     = numpy.reshape(numpy.asarray(self.cost_map.data)    , (info.height, info.width))
         
