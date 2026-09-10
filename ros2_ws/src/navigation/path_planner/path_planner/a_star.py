@@ -19,7 +19,7 @@ import numpy
 import heapq
 import math
 
-NAME = "FULL NAME"
+NAME = "Omar Rosario Carrasco"
 
 class AStarNode(Node):
     def a_star(self, start_r, start_c, goal_r, goal_c, grid_map, cost_map, use_diagonals):
@@ -40,29 +40,30 @@ class AStarNode(Node):
         g_values    [start_r, start_c] = 0
         [row, col]= [start_r, start_c]   #Current node
         #
-        # TODO:
-        # Implement the A* algorithm for path planning
-        # Map is considered to be a 2D array and start and goal positions
-        # are given as row-col pairs. You can follow these steps:
+        # A* main loop
         #
-        # WHILE open list is not empty and current is different from goal:
-        #     Get current node [row,col] from open list (see heapq.heappop function)
-        #     Mark current node as 'in_closed_list'
-        #     For [r,c,cost] in adjacent nodes:
-        #         Get r,c indices of neighbours of current node (check content of adjacents)
-        #         Discard if r,c is out of map, occupied, unknonw or in closed list, and continue
-        #         get a g-value g as: g-value of current node + dist + cost of neighbour r,c
-        #         Calculate heuristic 
-        #         Calculate f-value
-        #         IF g < g_value of neighbour r,c:
-        #             set g as g_value of neighbour r,c
-        #             set f as f_value of neighbour r,c
-        #             SET current node row,col as parent of neighbour r,c
-        #         If neighbour r,c is not in open list:
-        #             mark r,c as 'in_open_list'
-        #             add r,c to open list (check heapq.heappush)
-        #
-
+        while len(open_list) > 0 and [row, col] != [goal_r, goal_c]:
+            [_, [row, col]] = heapq.heappop(open_list)
+            in_closed_list[row, col] = True
+            for [dr, dc, dist] in adjacents:
+                r = row + dr
+                c = col + dc
+                if r < 0 or r >= height or c < 0 or c >= width:
+                    continue
+                if grid_map[r, c] == 100 or grid_map[r, c] == -1:
+                    continue
+                if in_closed_list[r, c]:
+                    continue
+                g = g_values[row, col] + dist + cost_map[r, c]
+                heuristic = math.sqrt((r - goal_r)**2 + (c - goal_c)**2)
+                f = g + heuristic
+                if g < g_values[r, c]:
+                    g_values[r, c] = g
+                    f_values[r, c] = f
+                    parent_nodes[r, c] = [row, col]
+                if not in_open_list[r, c]:
+                    in_open_list[r, c] = True
+                    heapq.heappush(open_list, (f, [r, c]))
         #
         # END OF WHILE
         #
@@ -112,7 +113,7 @@ class AStarNode(Node):
         use_diagonals = self.get_parameter('diagonals').get_parameter_value().bool_value
         inflated_grid = numpy.reshape(numpy.asarray(self.inflated_map.data), (info.height, info.width))
         cost_grid     = numpy.reshape(numpy.asarray(self.cost_map.data)    , (info.height, info.width))
-        
+
         self.get_logger().info("Planning path by A* from " + str([sx, sy])+" to "+str([gx, gy]))
         start_time = self.get_clock().now()
         path = self.a_star(int((sy-zy)/res), int((sx-zx)/res), int((gy-zy)/res), int((gx-zx)/res),
@@ -130,20 +131,20 @@ class AStarNode(Node):
 
     def callback_timer(self):
         self.pub_path.publish(self.msg_path)
-            
+
     def __init__(self):
         super().__init__("a_star_node")
         self.get_logger().info("INITIALIZING A STAR NODE - " + NAME)
         self.clt_inflated_map = self.create_client(GetMap, '/get_inflated_map')
         self.clt_cost_map     = self.create_client(GetMap, '/get_cost_map')
-        
+
         [self.inflated_map, self.cost_map] = self.get_maps()
         self.declare_parameter('diagonals', False)
         self.srv_plan_path = self.create_service(GetPlan, '/path_planning/plan_path', self.callback_a_star)
         self.pub_path = self.create_publisher(Path, '/path_planning/path', 10)
         self.msg_path = Path()
         self.timer = self.create_timer(0.5, self.callback_timer)
-            
+
 def main(args=None):
     rclpy.init(args=args)
     a_star_node = AStarNode()
@@ -151,6 +152,6 @@ def main(args=None):
     a_star_node.destroy_node()
     rclpy.shutdown()
 
-    
+
 if __name__ == '__main__':
     main()
