@@ -19,7 +19,7 @@ import numpy
 import heapq
 import math
 
-NAME = "FULL NAME"
+NAME = "Bello Jose Juan Diego"
 
 class AStarNode(Node):
     def a_star(self, start_r, start_c, goal_r, goal_c, grid_map, cost_map, use_diagonals):
@@ -62,7 +62,42 @@ class AStarNode(Node):
         #             mark r,c as 'in_open_list'
         #             add r,c to open list (check heapq.heappush)
         #
+        while len(open_list) > 0 and [row, col] != [goal_r, goal_c]:
+            [f, [row, col]] = heapq.heappop(open_list)
+            in_closed_list[row, col] = True
 
+            for [dr, dc, cost] in adjacents:
+                r = row + dr
+                c = col + dc
+
+                # Check if neighbour is outside the map
+                if r < 0 or r >= height or c < 0 or c >= width:
+                    continue
+
+                # Discard occupied, unknown or closed cells
+                if grid_map[r, c] != 0 or in_closed_list[r, c]:
+                    continue
+
+                # Calculate g-value
+                dist = math.sqrt(dr**2 + dc**2)
+                g = g_values[row, col] + dist + cost_map[r, c]
+
+                # Calculate heuristic
+                h = math.sqrt((goal_r - r)**2 + (goal_c - c)**2)
+
+                # Calculate f-value
+                f = g + h
+
+                # Update neighbour values if this path is better
+                if g < g_values[r, c]:
+                    g_values[r, c] = g
+                    f_values[r, c] = f
+                    parent_nodes[r, c] = [row, col]
+
+                # Add neighbour to open list if necessary
+                if not in_open_list[r, c]:
+                    in_open_list[r, c] = True
+                    heapq.heappush(open_list, (f, [r, c]))
         #
         # END OF WHILE
         #
