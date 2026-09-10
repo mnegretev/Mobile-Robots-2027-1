@@ -13,7 +13,7 @@ from geometry_msgs.msg import Pose, PoseStamped, Point
 from navig_msgs.srv import ProcessPath
 import numpy
 
-NAME = "FULL NAME"
+NAME = "Marco Ruben Guerrero Nieva"
 
 class PathSmoothingNode(Node):
     def smooth_path(self, Q, w1, w2, max_steps):
@@ -30,7 +30,34 @@ class PathSmoothingNode(Node):
         # The smoothed path must have the same shape.
         # Return the smoothed path.
         #
+        # Número de puntos en la ruta
+        n = len(P)
+        steps = 0
 
+        while steps < max_steps:
+            # Calcular el gradiente VJ
+            VJ = numpy.zeros_like(P)
+            # Puntos intermedios (i de 1 a n-2)
+            for i in range(1, n - 1):
+                # Término de suavizado: w1*(2*pi - pi-1 - pi+1)
+                smooth_term = w1 * (2 * P[i] - P[i-1] - P[i+1])
+                # Término de atracción a la ruta original: w2*(pi - qi)
+                data_term = w2 * (P[i] - Q[i])
+                VJ[i] = smooth_term + data_term
+            # Los extremos no se mueven (gradiente = 0)
+            VJ[0] = 0
+            VJ[n-1] = 0
+
+            # Calcular la norma del gradiente (suma de cuadrados)
+            norm_VJ = numpy.sqrt(numpy.sum(VJ**2))
+
+            # Condición de parada
+            if norm_VJ < tol:
+                break
+
+            # Actualizar la ruta: P = P - epsilon * VJ
+            P = P - epsilon * VJ
+            steps += 1
         #
         # END OF TODO
         #
