@@ -19,7 +19,7 @@ import numpy
 import heapq
 import math
 
-NAME = "FULL NAME"
+NAME = "Marco Ruben Guerrero Nieva"
 
 class AStarNode(Node):
     def a_star(self, start_r, start_c, goal_r, goal_c, grid_map, cost_map, use_diagonals):
@@ -43,27 +43,49 @@ class AStarNode(Node):
         # TODO:
         # Implement the A* algorithm for path planning
         # Map is considered to be a 2D array and start and goal positions
-        # are given as row-col pairs. You can follow these steps:
-        #
-        # WHILE open list is not empty and current is different from goal:
-        #     Get current node [row,col] from open list (see heapq.heappop function)
-        #     Mark current node as 'in_closed_list'
-        #     For [r,c,cost] in adjacent nodes:
-        #         Get r,c indices of neighbours of current node (check content of adjacents)
-        #         Discard if r,c is out of map, occupied, unknonw or in closed list, and continue
-        #         get a g-value g as: g-value of current node + dist + cost of neighbour r,c
-        #         Calculate heuristic 
-        #         Calculate f-value
-        #         IF g < g_value of neighbour r,c:
-        #             set g as g_value of neighbour r,c
-        #             set f as f_value of neighbour r,c
-        #             SET current node row,col as parent of neighbour r,c
-        #         If neighbour r,c is not in open list:
-        #             mark r,c as 'in_open_list'
-        #             add r,c to open list (check heapq.heappush)
-        #
+        while open_list and (row, col) != (goal_r, goal_c):
+            # 1. Pop node with lowest f-value from open list
+            _, current = heapq.heappop(open_list)
+            row, col = current
+            in_closed_list[row, col] = True
+            in_open_list[row, col] = False
 
-        #
+            # 2. Explore neighbours
+            for dr, dc, step_cost in adjacents:
+                nr, nc = row + dr, col + dc
+
+                # Check bounds
+                if nr < 0 or nr >= height or nc < 0 or nc >= width:
+                    continue
+
+                # Check if cell is occupied or unknown (grid_map 1 = free? check your data)
+                # In this template, grid_map values: 0 = free, 100 = occupied, -1 = unknown
+                if grid_map[nr, nc] != 0:
+                    continue
+
+                # If already in closed list, skip
+                if in_closed_list[nr, nc]:
+                    continue
+
+                # Calculate tentative g-value
+                # cost_map[nr,nc] is the cost (inflation) at that cell
+                tentative_g = g_values[row, col] + step_cost + cost_map[nr, nc]
+
+                # If this path is better than the current one
+                if tentative_g < g_values[nr, nc]:
+                    # Update parent
+                    parent_nodes[nr, nc, 0] = row
+                    parent_nodes[nr, nc, 1] = col
+                    # Update g and f values
+                    g_values[nr, nc] = tentative_g
+                    # Heuristic: Euclidean distance
+                    h = math.hypot(goal_r - nr, goal_c - nc)
+                    f_values[nr, nc] = tentative_g + h
+
+                    # Add to open list if not already there
+                    if not in_open_list[nr, nc]:
+                        in_open_list[nr, nc] = True
+                        heapq.heappush(open_list, (f_values[nr, nc], [nr, nc]))
         # END OF WHILE
         #
         path = []
