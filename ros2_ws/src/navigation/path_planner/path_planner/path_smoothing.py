@@ -13,7 +13,7 @@ from geometry_msgs.msg import Pose, PoseStamped, Point
 from navig_msgs.srv import ProcessPath
 import numpy
 
-NAME = "FULL NAME"
+NAME = "German Segovia Merlin   2027--1"
 
 class PathSmoothingNode(Node):
     def smooth_path(self, Q, w1, w2, max_steps):
@@ -30,7 +30,17 @@ class PathSmoothingNode(Node):
         # The smoothed path must have the same shape.
         # Return the smoothed path.
         #
-
+        # corazon del algoritmo de suavizado por gradiente descendente.
+        steps = 0
+        #para saber cuantas veces se ha repetido el proceso de suavizado y evitar que el ciclo se ejecute infinitamente
+        while numpy.linalg.norm(nabla) > tol and steps < max_steps:
+            nabla = numpy.zeros_like(P)
+         #Reinicia el gradiente a cero en cada iteracion
+            for i in range(1, len(P)-1):
+                #Recorre todos los puntos intermedios de la ruta, Calcula el gradiente para el punto i
+                nabla[i] = w1*(2*P[i] - P[i-1] - P[i+1]) + w2*(P[i] - Q[i])
+            P = P - epsilon * nabla
+            steps += 1  
         #
         # END OF TODO
         #
