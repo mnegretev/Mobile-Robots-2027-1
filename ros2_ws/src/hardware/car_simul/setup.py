@@ -10,10 +10,11 @@ setup(
     packages=find_packages(exclude=['test']),
     data_files=[
         ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
-        ('share/' + package_name, ['package.xml']),
+        ('share/'+ package_name, ['package.xml']),
         ('share/'+ package_name + '/worlds/', glob('worlds/*.wbt')),
         ('share/'+ package_name + '/worlds/city_traffic_net/', glob('worlds/city_traffic_net/*')),
         ('share/'+ package_name + '/launch/', glob('launch/*')),
+        ('share/' + package_name + '/resource/', glob('resource/*.urdf')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -24,6 +25,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'bmw_x5_controller_executable  = car_simul.bmw_x5_controller:main',
+            'car_teleop_executable         = car_simul.car_teleop_node:main',
         ],
     },
 )
