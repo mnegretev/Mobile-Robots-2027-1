@@ -838,7 +838,8 @@ DEF WEBOTS_VEHICLE0 BmwX5 {
         }
       ]
       fieldOfView 1
-      width 128
+      width 640
+      height 480
     }
 
     VelodyneHDL64E {
