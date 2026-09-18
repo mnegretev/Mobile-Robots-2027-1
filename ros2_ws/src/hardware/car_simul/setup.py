@@ -15,6 +15,7 @@ setup(
         ('share/'+ package_name + '/worlds/city_traffic_net/', glob('worlds/city_traffic_net/*')),
         ('share/'+ package_name + '/launch/', glob('launch/*')),
         ('share/' + package_name + '/resource/', glob('resource/*.urdf')),
+        ('share/' + package_name + '/protos/', glob('protos/*.proto')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,

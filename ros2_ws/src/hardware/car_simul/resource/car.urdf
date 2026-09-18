@@ -1,5 +1,19 @@
 <?xml version="1.0"?>
+
 <robot name="car">
+
   <webots>
+  
+    <device reference="lidar" type="Lidar">
+      <ros>
+        <enabled>true</enabled>
+        <updateRate>10</updateRate>
+        <topicName>/car/lidar</topicName>
+        <alwaysOn>true</alwaysOn>
+        <frameName>lidar_link</frameName>
+      </ros>
+    </device>
+
+    <plugin type="car_simul.bmw_x5_controller.CarDriver"/>
   </webots>
 </robot>
