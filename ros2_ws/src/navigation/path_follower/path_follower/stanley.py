@@ -1,5 +1,5 @@
 #
-# MOBILE ROBOTS - FI-UNAM, 2026-2
+# MOBILE ROBOTS - FI-UNAM, 2027-1
 # PATH FOLLOWING BY STANLEY CONTROLLER
 #
 # Instructions:
@@ -20,6 +20,7 @@ from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 from ament_index_python.packages import get_package_share_directory
+from datetime import datetime
 import math
 import numpy
 
@@ -41,16 +42,10 @@ class StanleyNode(Node):
         # Implement the Stanley controller given by:
         #
         # theta_e = error angle between theta_i and the vector from point (xi,yi) to robot position
-        theta_e = (theta_i - math.atan2(robot_y-y_i, robot_x-x_i) + math.pi)%(math.pi*2) - math.pi
         # et = signed distance from point (xi,yi) to robot position
-        et = math.sqrt((robot_x - x_i)**2 + (robot_y - y_i)**2)*numpy.sign(theta_e)       
         # alpha = (theta_ i - robot_a ) remeber to keep angle in (-pi,pi]
-        alpha = (theta_i - robot_a + math.pi)%(math.pi*2) - math.pi
         # v = v_max*e^(-Kv*(et^2+alpha^2))
-        v = v_max*math.exp(-Kv*(et**2 + alpha**2))
         # w = Ka*alpha + Kd*et
-        w = Ka*alpha + Kd*et
-        w = max(-w_max, min(w_max, w))
         # Remember to keep w in (-w_max,w_max)
         # Return the tuple [v,w]
         #
@@ -70,7 +65,7 @@ class StanleyNode(Node):
         theta_i = math.atan2(Pn[1] - Pp[1], Pn[0] - Pp[0])
         return Pi[0], Pi[1], theta_i
 
-    def stanley_path_following(self, path, Kd, Ka, v_max, w_max, tol):
+    def stanley_path_following(self, path, final_angle, Kd, Ka, v_max, w_max, tol_d, tol_a):
         #
         # TODO:
         # Use the calculate_control function to move the robot along the path.
@@ -84,12 +79,19 @@ class StanleyNode(Node):
         #     Publish the control signals with the function publish_and_save_data()
         #     Get robot position
         #
-        Pr, robot_a = self.get_robot_pose()
-        while numpy.linalg.norm(path[-1] - Pr)>tol and rclpy.ok():
+        Pr, theta_r = self.get_robot_pose()
+        while numpy.linalg.norm(path[-1] - Pr) > tol_d  and rclpy.ok():
             xi, yi, theta_i = self.get_nearest_point_and_angle(path, Pr[0], Pr[1])
-            v,w = self.calculate_control(Pr[0],Pr[1], robot_a,xi,yi,theta_i,Kd,Ka,v_max,w_max)
-            self.publish_and_save_data(Pr[0], Pr[1], robot_a, v,w)
-            Pr, robot_a = self.get_robot_pose()
+            v,w = self.calculate_control(Pr[0], Pr[1], theta_r, xi, yi, theta_i, Kd, Ka, v_max, w_max)
+            self.publish_and_save_data(Pr[0], Pr[1], theta_r, v, w)
+            Pr, theta_r = self.get_robot_pose()
+
+        while abs(final_angle - theta_r) > tol_a and rclpy.ok():
+            error_a = (final_angle - theta_r + math.pi)%(2*math.pi) - math.pi
+            w = w_max*(2/(1 + math.exp(-(error_a)/0.1)) - 1)
+            self.publish_and_save_data(Pr[0], Pr[1], theta_r, 0.0,w)
+            Pr, theta_r = self.get_robot_pose()
+            
         #
         # END OF WHILE
         #
@@ -123,6 +125,7 @@ class StanleyNode(Node):
 
     def callback_goal_pose(self, msg):
         self.goal_pose = numpy.asarray([msg.pose.position.x, msg.pose.position.y])
+        self.goal_angle = (math.atan2(msg.pose.orientation.z, msg.pose.orientation.w)*2 + math.pi)%(2*math.pi) - math.pi
         self.get_logger().info("Received new goal pose: " + str(self.goal_pose))
         self.new_goal_pose = True
 
@@ -130,18 +133,21 @@ class StanleyNode(Node):
         super().__init__("stanley_node")
         self.get_logger().info("INITIALIZING PATH FOLLOWER BY STANLEY NODE ...")
         self.nav_data = []
-        self.data_file = get_package_share_directory('path_follower') + "/data.txt" 
+        self.data_folder = get_package_share_directory('path_follower') + "/" 
         self.robot_pose = numpy.asarray([0.0,0.0])
         self.robot_a = 0.0
         self.new_goal_pose = False
         self.goal_pose = numpy.asarray([0.0,0.0])
+        self.goal_angle = 0.0
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
         self.declare_parameter('v_max', 0.5)
         self.declare_parameter('w_max', 1.0)
         self.declare_parameter('Kd', 1.0)
         self.declare_parameter('Ka', 1.0)
-        self.declare_parameter('tol', 0.1)
+        self.declare_parameter('tol_dist',  0.3)
+        self.declare_parameter('tol_angle', 0.1)
+        self.declare_parameter('folder', self.data_folder)
         self.clt_plan_path = self.create_client(GetPlan, '/path_planning/plan_path')
         self.clt_smooth_path = self.create_client(ProcessPath, '/path_planning/smooth_path')
         self.pub_cmd_vel = self.create_publisher(Twist, '/cmd_vel', 1)
@@ -216,20 +222,29 @@ class StanleyNode(Node):
                 w_max = self.get_parameter('w_max').get_parameter_value().double_value
                 Kd    = self.get_parameter('Kd').get_parameter_value().double_value
                 Ka    = self.get_parameter('Ka').get_parameter_value().double_value
-                tol   = self.get_parameter('tol').get_parameter_value().double_value
-                self.get_logger().info("Following path with [v_max, w_max, Kd, Ka, tol]="+str([v_max, w_max, Kd, Ka, tol]))
+                tol_d = self.get_parameter('tol_dist').get_parameter_value().double_value
+                tol_a = self.get_parameter('tol_angle').get_parameter_value().double_value
+                self.get_logger().info("Following path with [v_max, w_max, Kd, Ka, tol_d, tol_a]="+str([v_max, w_max, Kd, Ka, tol_d, tol_a]))
                 path_points = [numpy.asarray([p.pose.position.x, p.pose.position.y]) for p in path.poses]
-                self.stanley_path_following(path_points, Kd, Ka, v_max, w_max, tol)
+                self.stanley_path_following(path_points, self.goal_angle, Kd, Ka, v_max, w_max, tol_d, tol_a)
                 self.pub_cmd_vel.publish(Twist())
                 self.pub_goal_reached.publish(Bool(data=True))
                 self.get_logger().info("Global goal point reached")
                 state = SM_SAVE_DATA
 
             elif state == SM_SAVE_DATA:
+                self.data_folder = self.get_parameter('folder').get_parameter_value().string_value
+                sufix = datetime.now().strftime("%Y%m%dT%H%M%S")
                 s = ""
                 for d in self.nav_data:
-                    s += str(d[0]) +","+ str(d[1]) +","+ str(d[2]) +","+ str(d[3]) +","+ str(d[4]) + "\n"
-                f = open(self.data_file, "w")
+                    s += str(d[0]) +","+ str(d[1]) +","+ str(d[2]) +","+ str(d[3]) +","+ str(d[4])+"\n"
+                f = open(self.data_folder + "/robot_stanley" + sufix + ".txt", "w")
+                f.write(s)
+                f.close()
+                s = ""
+                for p in path_points:
+                    s += str(p[0]) + ',' + str(p[1]) + '\n'
+                f = open(self.data_folder + "/goal_stanley" + sufix + ".txt", "w")
                 f.write(s)
                 f.close()
                 state = SM_INIT
