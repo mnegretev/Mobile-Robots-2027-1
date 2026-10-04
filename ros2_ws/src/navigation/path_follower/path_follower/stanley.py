@@ -24,7 +24,7 @@ from datetime import datetime
 import math
 import numpy
 
-NAME = "FULL NAME"
+NAME = "SOLORIO GONZALEZ ALDO BRUNO"
 
 SM_INIT = 0
 SM_WAIT_FOR_NEW_GOAL = 10
@@ -50,6 +50,46 @@ class StanleyNode(Node):
         # Return the tuple [v,w]
         #
         
+        # Vector desde el punto mas cercano de la ruta hacia el robot.
+        dx = robot_x - x_i
+        dy = robot_y - y_i
+
+        # Error entre la direccion de la ruta y la direccion de ese vector.
+        theta_e = theta_i - math.atan2(dy, dx)
+
+        # Normalizar al intervalo (-pi, pi].
+        theta_e = (theta_e + math.pi) % (2.0 * math.pi) - math.pi
+        if theta_e <= -math.pi:
+            theta_e += 2.0 * math.pi
+
+        # Distancia al punto de la ruta.
+        distance = math.hypot(dx, dy)
+
+        # Error transversal con signo.
+        if theta_e > 0.0:
+            error_t = distance
+        elif theta_e < 0.0:
+            error_t = -distance
+        else:
+            error_t = 0.0
+
+        # Error entre la orientacion de la ruta y la del robot.
+        error_a = theta_i - robot_a
+
+        # Normalizar al intervalo (-pi, pi].
+        error_a = (error_a + math.pi) % (2.0 * math.pi) - math.pi
+        if error_a <= -math.pi:
+            error_a += 2.0 * math.pi
+
+        # Velocidad lineal segun los errores transversal y angular.
+        v = v_max * math.exp(-Kv * (error_t ** 2 + error_a ** 2))
+
+        # Velocidad angular calculada con ambas correcciones.
+        w = Ka * error_a + Kd * error_t
+
+        # Limitar la velocidad angular al intervalo permitido.
+        w = max(-w_max, min(w_max, w))
+
         return [v,w]
 
     def get_nearest_point_and_angle(self, path, robot_x, robot_y):
@@ -79,6 +119,7 @@ class StanleyNode(Node):
         #     Publish the control signals with the function publish_and_save_data()
         #     Get robot position
         #
+        
         Pr, theta_r = self.get_robot_pose()
         while numpy.linalg.norm(path[-1] - Pr) > tol_d  and rclpy.ok():
             xi, yi, theta_i = self.get_nearest_point_and_angle(path, Pr[0], Pr[1])
@@ -98,7 +139,17 @@ class StanleyNode(Node):
         return
 
     def publish_and_save_data(self, robot_x, robot_y, robot_a, v,w):
-        self.nav_data.append([robot_x, robot_y, robot_a, v, w])
+        # self.nav_data.append([robot_x, robot_y, robot_a, v, w])
+
+        # Tiempo transcurrido desde el inicio del seguimiento, en segundos.
+        elapsed_time = (
+            self.get_clock().now().nanoseconds - self.start_time_ns
+        ) / 1e9
+
+        self.nav_data.append(
+            [robot_x, robot_y, robot_a, v, w, elapsed_time]
+        )
+
         msg = Twist()
         msg.linear.x = v
         msg.angular.z = w
@@ -218,6 +269,11 @@ class StanleyNode(Node):
                 state = SM_FOLLOWING_PATH
 
             elif state == SM_FOLLOWING_PATH:
+
+                # Iniciar un registro independiente para este recorrido.
+                self.nav_data = []
+                self.start_time_ns = self.get_clock().now().nanoseconds
+
                 v_max = self.get_parameter('v_max').get_parameter_value().double_value
                 w_max = self.get_parameter('w_max').get_parameter_value().double_value
                 Kd    = self.get_parameter('Kd').get_parameter_value().double_value
@@ -236,8 +292,12 @@ class StanleyNode(Node):
                 self.data_folder = self.get_parameter('folder').get_parameter_value().string_value
                 sufix = datetime.now().strftime("%Y%m%dT%H%M%S")
                 s = ""
+                # for d in self.nav_data:
+                #     s += str(d[0]) +","+ str(d[1]) +","+ str(d[2]) +","+ str(d[3]) +","+ str(d[4])+"\n"
+
                 for d in self.nav_data:
-                    s += str(d[0]) +","+ str(d[1]) +","+ str(d[2]) +","+ str(d[3]) +","+ str(d[4])+"\n"
+                    s += ",".join(str(value) for value in d) + "\n"
+
                 f = open(self.data_folder + "/robot_stanley" + sufix + ".txt", "w")
                 f.write(s)
                 f.close()

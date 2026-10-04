@@ -24,7 +24,7 @@ from datetime import datetime
 import math
 import numpy
 
-NAME = "FULL NAME"
+NAME = "SOLORIO GONZALEZ ALDO BRUNO"
 
 SM_INIT = 0
 SM_WAIT_FOR_NEW_GOAL = 10
@@ -49,6 +49,23 @@ class PurePursuitNode(Node):
         # Return the tuple [v,w]
         #
         
+        # Direccion desde la posicion del robot hacia el punto objetivo.
+        target_angle = math.atan2(goal_y - robot_y, goal_x - robot_x)
+
+        # Diferencia entre la direccion deseada y la orientacion del robot.
+        error_a = target_angle - robot_a
+
+        # Normalizar el error angular al intervalo (-pi, pi].
+        error_a = (error_a + math.pi) % (2.0 * math.pi) - math.pi
+        if error_a <= -math.pi:
+            error_a += 2.0 * math.pi
+
+        # Velocidad lineal: disminuye cuando aumenta el error angular.
+        v = v_max * math.exp(-(error_a ** 2) / alpha)
+
+        # Velocidad angular: corrige la orientacion hacia el punto objetivo.
+        w = w_max * (2.0 / (1.0 + math.exp(-error_a / beta)) - 1.0)
+
         return [v,w]
 
     def pure_pursuit(self, path, final_angle, alpha, beta, v_max, w_max, tol_d, tol_a):
@@ -90,7 +107,17 @@ class PurePursuitNode(Node):
         return
 
     def publish_and_save_data(self, robot_x, robot_y, robot_a, v,w):
-        self.nav_data.append([robot_x, robot_y, robot_a, v, w])
+        # self.nav_data.append([robot_x, robot_y, robot_a, v, w])
+
+        # Tiempo transcurrido desde el inicio del seguimiento, en segundos.
+        elapsed_time = (
+            self.get_clock().now().nanoseconds - self.start_time_ns
+        ) / 1e9
+
+        self.nav_data.append(
+            [robot_x, robot_y, robot_a, v, w, elapsed_time]
+        )
+
         msg = Twist()
         msg.linear.x = v
         msg.angular.z = w
@@ -208,6 +235,11 @@ class PurePursuitNode(Node):
                 state = SM_FOLLOWING_PATH
 
             elif state == SM_FOLLOWING_PATH:
+
+                # Iniciar un registro independiente para este recorrido.
+                self.nav_data = []
+                self.start_time_ns = self.get_clock().now().nanoseconds
+
                 v_max = self.get_parameter('v_max').get_parameter_value().double_value
                 w_max = self.get_parameter('w_max').get_parameter_value().double_value
                 alpha = self.get_parameter('alpha').get_parameter_value().double_value
@@ -226,8 +258,12 @@ class PurePursuitNode(Node):
                 self.data_folder = self.get_parameter('folder').get_parameter_value().string_value
                 sufix = datetime.now().strftime("%Y%m%dT%H%M%S")
                 s = ""
+                # for d in self.nav_data:
+                #     s += str(d[0]) +","+ str(d[1]) +","+ str(d[2]) +","+ str(d[3]) +","+ str(d[4])+"\n"
+
                 for d in self.nav_data:
-                    s += str(d[0]) +","+ str(d[1]) +","+ str(d[2]) +","+ str(d[3]) +","+ str(d[4])+"\n"
+                    s += ",".join(str(value) for value in d) + "\n"
+
                 f = open(self.data_folder + "/robot_pure_pursuit" + sufix + ".txt", "w")
                 f.write(s)
                 f.close()
