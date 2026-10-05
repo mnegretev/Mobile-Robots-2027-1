@@ -10,7 +10,6 @@
 
 import rclpy
 from rclpy.node import Node
-#from rclpy.duration import Duration
 from std_msgs.msg import Bool
 from geometry_msgs.msg import Twist, PoseStamped, Point, Vector3
 from visualization_msgs.msg import MarkerArray, Marker
@@ -24,7 +23,7 @@ import math
 import numpy
 import time
 
-NAME = "FULL NAME"
+NAME = "LEONARDO ALEJANDRO GARCIA LERMA"
 
 SM_WAIT_FOR_TF = 0
 SM_READY = 10
@@ -37,27 +36,20 @@ class PotFieldsNode(Node):
         v,w = 0,0
         v_max = 0.5
         w_max = 0.8
-        #
-        # TODO:
-        # Implement the control law given by:
-        # v = v_max*math.exp(-error_a*error_a/alpha)
-        # w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
-        # Set v and w same as simple_move:path_follower
-        # Return v and w as a tuble [v,w]
-        #      
+        
+        error_a = math.atan2(goal_y, goal_x)
+        v = v_max * math.exp(-error_a * error_a / alpha)
+        w = w_max * (2 / (1 + math.exp(-error_a / beta)) - 1)
         
         return [v,w]
     
     def attraction_force(self, goal_x, goal_y, eta):
         force_x, force_y = 0,0
-        #
-        # TODO:
-        # Calculate the attraction force, given the robot and goal positions.
-        # Return a tuple of the form [force_x, force_y]
-        # where force_x and force_y are the X and Y components
-        # of the resulting attraction force
-        #
-        
+        norm_qg = math.hypot(goal_x, goal_y)
+        if norm_qg != 0:
+            force_x = -eta * (goal_x / norm_qg)
+            force_y = -eta * (goal_y / norm_qg)
+            
         return numpy.asarray([force_x, force_y])
 
     def rejection_force(self, laser_readings, zeta, d0):
@@ -65,17 +57,18 @@ class PotFieldsNode(Node):
         if N == 0:
             return [0, 0]
         force_x, force_y = 0, 0
-        #
-        # TODO:
-        # Calculate the total rejection force given by the average
-        # of the rejection forces caused by each laser reading.
-        # laser_readings is an array where each element is a tuple [distance, angle]
-        # both measured w.r.t. robot's frame.
-        # See lecture notes for equations to calculate rejection forces.
-        # Return a tuple of the form [force_x, force_y]
-        # where force_x and force_y are the X and Y components
-        # of the resulting rejection force
-        #
+        
+        for d, theta in laser_readings:
+            if d < d0 and d > 0:
+                rho = zeta * math.sqrt((1.0 / d) - (1.0 / d0))
+            else:
+                rho = 0.0
+            
+            force_x += rho * math.cos(theta)
+            force_y += rho * math.sin(theta)
+            
+        force_x = force_x / N
+        force_y = force_y / N
         
         return numpy.asarray([force_x, force_y])
     
@@ -200,6 +193,7 @@ class PotFieldsNode(Node):
         self.pub_markers = self.create_publisher(MarkerArray, '/navigation/pot_field_markers', 1)
         self.state = SM_WAIT_FOR_TF
         self.timer = self.create_timer(0.1, self.callback_timer)
+
 
 def main(args=None):
     rclpy.init(args=args)
