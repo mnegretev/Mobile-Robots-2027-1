@@ -1,0 +1,117 @@
+#VRML_SIM R2025a utf8
+
+# Velodyne HDL-64E S3 approximation for Webots R2025a.
+# This is not an official Velodyne/Ouster digital twin.
+# It approximates the main geometric scanning characteristics.
+
+PROTO VelodyneHDL64E [
+  field SFVec3f    translation          0 0 0
+  field SFRotation rotation             0 0 1 0
+  field SFString   name                 "lidar"
+
+  field SFInt32    horizontalResolution 1024
+  field SFFloat    minRange             0.5
+  field SFFloat    maxRange             120
+  field SFFloat    noise                0.00017
+]
+{
+  Lidar {
+    translation IS translation
+    rotation IS rotation
+
+    children [
+      # Simplified base
+      Pose {
+        translation 0 0 -0.105
+        rotation 1 0 0 1.5708
+
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.12 0.12 0.12
+              roughness 0.35
+              metalness 0.7
+            }
+
+            geometry Cylinder {
+              radius 0.1015
+              height 0.073
+            }
+          }
+        ]
+      }
+
+      # Simplified rotating sensor body
+      Pose {
+        translation 0 0 0.035
+        rotation 1 0 0 1.5708
+
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.25 0.25 0.27
+              roughness 0.25
+              metalness 0.75
+            }
+
+            geometry Cylinder {
+              radius 0.1075
+              height 0.210
+            }
+          }
+        ]
+      }
+
+      # Dark optical band
+      Pose {
+        translation 0 0 0.035
+        rotation 1 0 0 1.5708
+
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.015 0.015 0.02
+              roughness 0.2
+              metalness 0.1
+            }
+
+            geometry Cylinder {
+              radius 0.108
+              height 0.070
+            }
+          }
+        ]
+      }
+    ]
+
+    name IS name
+    model "Velodyne HDL-64E S3 approximation"
+
+    # 64 laser channels
+    numberOfLayers 64
+
+    # 360 degrees horizontal
+    fieldOfView 6.28318530718
+
+    # 26.9 degrees vertical
+    verticalFieldOfView 0.469493568
+
+    # Center the vertical scan approximately between
+    # +2 deg and -24.9 deg.
+    tiltAngle -0.19984
+
+    # 1024 points / layer ~= 0.3516 deg horizontal spacing
+    horizontalResolution IS horizontalResolution
+
+    near 0.05
+    minRange IS minRange
+    maxRange IS maxRange
+
+    # Computationally simpler 360-degree model.
+    type "fixed"
+    projection "cylindrical"
+
+    noise IS noise
+    resolution -1
+  }
+}
