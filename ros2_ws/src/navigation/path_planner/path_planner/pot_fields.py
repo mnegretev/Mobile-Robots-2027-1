@@ -24,7 +24,7 @@ import math
 import numpy
 import time
 
-NAME = "FULL NAME"
+NAME = "SOLORIO GONZALEZ ALDO BRUNO"
 
 SM_WAIT_FOR_TF = 0
 SM_READY = 10
@@ -46,6 +46,18 @@ class PotFieldsNode(Node):
         # Return v and w as a tuble [v,w]
         #      
         
+        # Si el punto relativo es prácticamente cero, detener el robot.
+        if math.hypot(goal_x, goal_y) < 1e-9:
+            return [v, w]
+
+        # Ángulo hacia el punto deseado respecto al robot.
+        error_a = math.atan2(goal_y, goal_x)
+        error_a = (error_a + math.pi) % (2 * math.pi) - math.pi
+
+        # Leyes de control para las velocidades lineal y angular.
+        v = v_max * math.exp(-error_a * error_a / alpha)
+        w = w_max * (2 / (1 + math.exp(-error_a / beta)) - 1)
+
         return [v,w]
     
     def attraction_force(self, goal_x, goal_y, eta):
@@ -58,12 +70,19 @@ class PotFieldsNode(Node):
         # of the resulting attraction force
         #
         
+        distance = math.hypot(goal_x, goal_y)
+
+        if distance > 0.0:
+            force_x = -eta * goal_x / distance
+            force_y = -eta * goal_y / distance
+
+
         return numpy.asarray([force_x, force_y])
 
     def rejection_force(self, laser_readings, zeta, d0):
         N = len(laser_readings)
-        if N == 0:
-            return [0, 0]
+        # if N == 0:
+        #     return [0, 0]
         force_x, force_y = 0, 0
         #
         # TODO:
@@ -77,6 +96,24 @@ class PotFieldsNode(Node):
         # of the resulting rejection force
         #
         
+        if N == 0:
+            return numpy.asarray([force_x, force_y])
+
+        for distance, angle in laser_readings:
+            # Ignorar lecturas no válidas y obstáculos fuera de influencia.
+            if not math.isfinite(distance) or distance <= 0.0:
+                continue
+
+            if distance < d0:
+                magnitude = zeta * (1.0 / distance - 1.0 / d0)
+
+                force_x += magnitude * math.cos(angle)
+                force_y += magnitude * math.sin(angle)
+
+        # Promedio respecto al total de lecturas del lidar.
+        force_x /= N
+        force_y /= N
+
         return numpy.asarray([force_x, force_y])
     
     def publish_speed_and_forces(self, v, w, Fa, Fr, F):        
