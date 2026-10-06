@@ -24,7 +24,7 @@ import math
 import numpy
 import time
 
-NAME = "FULL NAME"
+NAME = "Leonardo Santos Vicente"
 
 SM_WAIT_FOR_TF = 0
 SM_READY = 10
@@ -34,7 +34,7 @@ SM_GOAL_REACHED = 50
 
 class PotFieldsNode(Node):
     def calculate_control(self, goal_x, goal_y, alpha, beta):
-        v,w = 0,0
+        v,w = 0.0,0.0
         v_max = 0.5
         w_max = 0.8
         #
@@ -44,7 +44,10 @@ class PotFieldsNode(Node):
         # w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
         # Set v and w same as simple_move:path_follower
         # Return v and w as a tuble [v,w]
-        #      
+        #
+        error_a = math.atan2(goal_y, goal_x)
+        v = v_max*math.exp(-error_a*error_a/alpha)
+        w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
         
         return [v,w]
     
@@ -57,6 +60,13 @@ class PotFieldsNode(Node):
         # where force_x and force_y are the X and Y components
         # of the resulting attraction force
         #
+        qg_x = float(goal_x)
+        qg_y = float(goal_y)
+        qg_norm = numpy.sqrt(qg_x**2 + qg_y**2)
+        
+        if qg_norm != 0:
+            force_x = -eta * qg_x / qg_norm
+            force_y = -eta * qg_y / qg_norm
         
         return numpy.asarray([force_x, force_y])
 
@@ -76,8 +86,16 @@ class PotFieldsNode(Node):
         # where force_x and force_y are the X and Y components
         # of the resulting rejection force
         #
+        for d, theta in laser_readings:
+            if d < d0:
+                rho = zeta * numpy.sqrt(1 / d - 1 / d0)
+                force_x += rho * numpy.cos(theta)
+                force_y += rho * numpy.sin(theta)
+
+        force_x = force_x / N
+        force_y = force_y / N
         
-        return numpy.asarray([force_x, force_y])
+        return numpy.array([float(force_x), float(force_y)])
     
     def publish_speed_and_forces(self, v, w, Fa, Fr, F):        
         self.pub_cmd_vel.publish(Twist(linear=Vector3(x=v), angular=Vector3(z=w)))
