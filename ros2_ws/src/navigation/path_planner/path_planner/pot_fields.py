@@ -53,6 +53,7 @@ class PotFieldsNode(Node):
         v = v_max * math.exp(-error_a * error_a / alpha)
         w = w_max * (2 / (1 + math.exp(-error_a / beta)) - 1)
           
+
         return [v,w]
     
     def attraction_force(self, goal_x, goal_y, eta):
