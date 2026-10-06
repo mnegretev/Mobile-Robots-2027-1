@@ -8,6 +8,8 @@
 # Tune the constants alpha and beta to get a smooth movement. 
 #
 
+from sympy import beta
+
 import rclpy
 from rclpy.node import Node
 #from rclpy.duration import Duration
@@ -44,12 +46,13 @@ class PotFieldsNode(Node):
         # w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
         # Set v and w same as simple_move:path_follower
         # Return v and w as a tuble [v,w]
+        # Error angular respecto al punto objetivo
+        error_a = math.atan2(goal_y, goal_x)
 
-        error_a = (math.atan2(goal_y - robot_y, goal_x - robot_x) - robot_a + math.pi)%(2*math.pi) - math.pi
-        
-        v = v_max * math.exp(-error_a*error_a/alpha)
-        w = w_max * (2/(1 + math.exp(-error_a/beta)) - 1)
-       
+        # Leyes de control
+        v = v_max * math.exp(-error_a * error_a / alpha)
+        w = w_max * (2 / (1 + math.exp(-error_a / beta)) - 1)
+          
         return [v,w]
     
     def attraction_force(self, goal_x, goal_y, eta):
@@ -61,12 +64,11 @@ class PotFieldsNode(Node):
         # where force_x and force_y are the X and Y components
         # of the resulting attraction force
         #
+        goal_norm = numpy.sqrt(goal_x**2 + goal_y**2)
+        if goal_norm > 0:
+            force_x = -eta * goal_x / goal_norm
+            force_y = -eta * goal_y / goal_norm
 
-        qg = numpy.array([goal_x, goal_y])
-        qg_norm = numpy.linalg.norm(qg)
-        fatt = -eta * qg_norm * (qg / qg_norm)  # Vector de atracción proporcional a la distancia al objetivo
-        force_x, force_y = fatt[0], fatt[1]
-        
         return numpy.asarray([force_x, force_y])
 
     def rejection_force(self, laser_readings, zeta, d0):
@@ -85,11 +87,17 @@ class PotFieldsNode(Node):
         # where force_x and force_y are the X and Y components
         # of the resulting rejection force
         #
-        for reading in laser_readings:
-            ro = zeta * math.sqrt((1/reading[0] - 1/d0)**2) * (1/reading[0]**2) if reading[0] < d0 else 0
-            force_x += ro * math.cos(reading[1])
-            force_y += ro * math.sin(reading[1])
-          
+
+        for distance, angle in laser_readings:
+            if distance < d0:
+            
+                force_magnitude = zeta * math.sqrt((1.0 / distance) - (1.0 / d0))
+        
+                force_x += force_magnitude * math.cos(angle)
+                force_y += force_magnitude * math.sin(angle)
+            else:
+                force_x += 0
+                force_y += 0
         force_x /= N
         force_y /= N
         
