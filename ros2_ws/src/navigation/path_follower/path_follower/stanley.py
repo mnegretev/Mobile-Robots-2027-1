@@ -24,7 +24,7 @@ from datetime import datetime
 import math
 import numpy
 
-NAME = "FULL NAME"
+NAME = "Baños Reyes Renata"
 
 SM_INIT = 0
 SM_WAIT_FOR_NEW_GOAL = 10
@@ -49,6 +49,15 @@ class StanleyNode(Node):
         # Remember to keep w in (-w_max,w_max)
         # Return the tuple [v,w]
         #
+
+        theta_e = theta_i - math.atan2(robot_y - y_i, robot_x - x_i)
+        distance = math.sqrt((robot_x - x_i)**2 + (robot_y - y_i)**2)
+        et = math.sign(theta_e) * distance
+
+        alpha = (theta_i - robot_a + math.pi) % (2 * math.pi) - math.pi
+        v = v_max * math.exp(-Kv * (et**2 + alpha**2))
+        w = Ka * alpha + Kd * et
+        w = max(-w_max, min(w, w_max))
         
         return [v,w]
 

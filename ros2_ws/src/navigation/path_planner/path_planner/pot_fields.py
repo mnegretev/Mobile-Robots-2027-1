@@ -24,7 +24,7 @@ import math
 import numpy
 import time
 
-NAME = "FULL NAME"
+NAME = "Baños Reyes Renata"
 
 SM_WAIT_FOR_TF = 0
 SM_READY = 10
@@ -44,8 +44,12 @@ class PotFieldsNode(Node):
         # w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
         # Set v and w same as simple_move:path_follower
         # Return v and w as a tuble [v,w]
-        #      
+
+        error_a = (math.atan2(goal_y - robot_y, goal_x - robot_x) - robot_a + math.pi)%(2*math.pi) - math.pi
         
+        v = v_max * math.exp(-error_a*error_a/alpha)
+        w = w_max * (2/(1 + math.exp(-error_a/beta)) - 1)
+       
         return [v,w]
     
     def attraction_force(self, goal_x, goal_y, eta):
@@ -57,6 +61,11 @@ class PotFieldsNode(Node):
         # where force_x and force_y are the X and Y components
         # of the resulting attraction force
         #
+
+        qg = numpy.array([goal_x, goal_y])
+        qg_norm = numpy.linalg.norm(qg)
+        fatt = -eta * qg_norm * (qg / qg_norm)  # Vector de atracción proporcional a la distancia al objetivo
+        force_x, force_y = fatt[0], fatt[1]
         
         return numpy.asarray([force_x, force_y])
 
@@ -76,6 +85,13 @@ class PotFieldsNode(Node):
         # where force_x and force_y are the X and Y components
         # of the resulting rejection force
         #
+        for reading in laser_readings:
+            ro = zeta * math.sqrt((1/reading[0] - 1/d0)**2) * (1/reading[0]**2) if reading[0] < d0 else 0
+            force_x += ro * math.cos(reading[1])
+            force_y += ro * math.sin(reading[1])
+          
+        force_x /= N
+        force_y /= N
         
         return numpy.asarray([force_x, force_y])
     
