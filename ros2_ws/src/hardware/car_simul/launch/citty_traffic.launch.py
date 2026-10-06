@@ -15,8 +15,24 @@ def generate_launch_description():
         world=os.path.join(package_dir, 'worlds', 'city_traffic.wbt')
     )
     
+    robot_description_path = os.path.join(
+        package_dir,
+        'resource',
+        'car.urdf'
+    )
+
+    car_driver = WebotsController(
+        robot_name='car',
+        parameters=[
+            {'robot_description': robot_description_path},
+            {'use_sim_time': True},
+        ],
+        respawn=True
+    )
+    
     return LaunchDescription([
         webots,
+        car_driver,
         launch.actions.RegisterEventHandler(
             event_handler=launch.event_handlers.OnProcessExit(
                 target_action=webots,
