@@ -87,7 +87,7 @@ def generate_launch_description():
         executable="pure_pursuit",
         name='pure_pursuit',
         output='screen',
-        parameters=[{'alpha':0.1}, {'beta':0.1}, {'folder':os.path.expanduser('~')}]
+        parameters=[{'alpha':0.5}, {'beta':0.2}, {'folder':os.path.expanduser('~')}]
     )
     stanley_node = Node(
         package="path_follower",
