@@ -24,60 +24,62 @@ import math
 import numpy
 import time
 
-NAME = "FULL NAME"
+NAME = "Marco Ruben Guerrero Nieva"
 
 SM_INIT = 0
 SM_WAIT_FOR_NEW_GOAL = 10
 SM_POT_FIELDS = 40
 
 class PotFieldsNode(Node):
-    def calculate_control(self, goal_x, goal_y, alpha, beta):
-        v,w = 0,0
+    def calculate_control(self, force_x, force_y, alpha, beta):
         v_max = 0.5
         w_max = 0.8
-        #
-        # TODO:
-        # Implement the control law given by:
-        # v = v_max*math.exp(-error_a*error_a/alpha)
-        # w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
-        # Set v and w same as simple_move:path_follower
-        # Return v and w as a tuble [v,w]
-        #
-        
-        return [v,w]
+        error_a = math.atan2(force_y, force_x)
+        # Si el error es muy grande, el robot gira en su lugar
+        v = v_max * math.exp(-error_a*error_a/alpha)
+        w = w_max * (2.0/(1.0 + math.exp(-error_a/beta)) - 1.0)
+        # Limitar velocidades
+        v = max(min(v, v_max), 0.0)
+        w = max(min(w, w_max), -w_max)
+        return [v, w]
     
     def attraction_force(self, goal_x, goal_y, eta):
         force_x, force_y = 0,0
-        #
+        
         # TODO:
         # Calculate the attraction force, given the robot and goal positions.
         # Return a tuple of the form [force_x, force_y]
         # where force_x and force_y are the X and Y components
         # of the resulting attraction force
         #
-        
+        norm_qg = math.sqrt(goal_x**2 + goal_y**2)
+        if norm_qg > 1e-6:
+            force_x = -eta * goal_x / norm_qg
+            force_y = -eta * goal_y / norm_qg        
         return numpy.asarray([force_x, force_y])
 
     def rejection_force(self, laser_readings, zeta, d0):
         N = len(laser_readings)
         if N == 0:
-            return [0, 0]
+            return numpy.asarray([0.0, 0.0])
         force_x, force_y = 0, 0
         #
         # TODO:
         # Calculate the total rejection force given by the average
         # of the rejection forces caused by each laser reading.
         # laser_readings is an array where each element is a tuple [distance, angle]
-        # both measured w.r.t. robot's frame.
-        # See lecture notes for equations to calculate rejection forces.
-        # Return a tuple of the form [force_x, force_y]
-        # where force_x and force_y are the X and Y components
-        # of the resulting rejection force
         #
-        
+        for d, theta in laser_readings:
+            if d < d0 and d > 0.01:
+                rho = zeta * math.sqrt(1.0/d - 1.0/d0)
+                force_x += rho * math.cos(theta)
+                force_y += rho * math.sin(theta)
+        force_x /= N
+        force_y /= N
         return numpy.asarray([force_x, force_y])
 
     def move_by_pot_fields(self, global_goal_x, global_goal_y, epsilon, tol, eta, zeta, d0, alpha, beta):
+
         #
         # TODO
         # Implement potential fields given a goal point and tunning constants
@@ -93,9 +95,26 @@ class PotFieldsNode(Node):
         #    Call the publish_speed_and_forces(...) function
         #    get goal point wrt robot
         #
-        
-        # END 
-        #
+        while rclpy.ok():
+            goal_x, goal_y = self.get_goal_point_wrt_robot(global_goal_x, global_goal_y)
+            dist_to_goal = math.sqrt(goal_x**2 + goal_y**2)
+            if dist_to_goal < tol:
+                break
+
+            Fa = self.attraction_force(goal_x, goal_y, eta)
+            Fr = self.rejection_force(self.laser_readings, zeta, d0)
+            F = Fa + Fr
+
+            # Ley de control usando la dirección de la fuerza total (para evitar obstáculos)
+            error_a = math.atan2(F[1], F[0])
+            v_max = 0.5
+            w_max = 0.8
+            v = v_max * math.exp(-error_a*error_a/alpha)
+            w = w_max * (2.0/(1.0 + math.exp(-error_a/beta)) - 1.0)
+
+            self.publish_speed_and_forces(v, w, Fa, Fr, F)
+            rclpy.spin_once(self)
+            time.sleep(0.05)  # reducir frecuencia para que no parpadee
         return
 
     def get_goal_point_wrt_robot(self, goal_x, goal_y):
