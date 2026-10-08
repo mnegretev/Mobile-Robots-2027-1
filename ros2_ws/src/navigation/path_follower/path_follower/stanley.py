@@ -24,7 +24,7 @@ from datetime import datetime
 import math
 import numpy
 
-NAME = "FULL NAME"
+NAME = "Medrano Solano Enrique"
 
 SM_INIT = 0
 SM_WAIT_FOR_NEW_GOAL = 10
@@ -49,6 +49,16 @@ class StanleyNode(Node):
         # Remember to keep w in (-w_max,w_max)
         # Return the tuple [v,w]
         #
+        theta_e_raw = theta_i - math.atan2(robot_y - y_i, robot_x - x_i)
+        theta_e = (theta_e_raw + math.pi) % (2 * math.pi) - math.pi
+        delta_t = numpy.sign(theta_e) * math.sqrt((robot_x - x_i)**2 + (robot_y - y_i)** 2)
+        #Se presenta un error de orientacion
+        delta_theta = (theta_i - robot_a + math.pi) % (2 * math.pi) - math.pi
+
+        #Se establecen las leyes de control
+        v = v_max * math.exp(-Kv * (delta_t**2 + delta_theta**2))
+        w_raw = Ka * delta_theta + Kd * delta_t
+        w = max(min(w_raw, w_max), -w_max)
         
         return [v,w]
 
