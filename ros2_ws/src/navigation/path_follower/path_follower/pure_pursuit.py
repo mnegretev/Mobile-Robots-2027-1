@@ -24,7 +24,7 @@ from datetime import datetime
 import math
 import numpy
 
-NAME = "FULL NAME"
+NAME = "Bello Jose Juan Diego"
 
 SM_INIT = 0
 SM_WAIT_FOR_NEW_GOAL = 10
@@ -48,7 +48,14 @@ class PurePursuitNode(Node):
         # Remember to keep error angle in the interval (-pi,pi]
         # Return the tuple [v,w]
         #
-        
+        v, w = 0, 0
+
+        error_a = math.atan2(goal_y - robot_y, goal_x - robot_x) - robot_a
+
+        error_a = (error_a + math.pi) % (2 * math.pi) - math.pi
+
+        v = v_max * math.exp(-error_a * error_a / alpha)
+        w = w_max * (2 / (1 + math.exp(-error_a / beta)) - 1)
         return [v,w]
 
     def pure_pursuit(self, path, final_angle, alpha, beta, v_max, w_max, tol_d, tol_a):

@@ -24,7 +24,7 @@ from datetime import datetime
 import math
 import numpy
 
-NAME = "FULL NAME"
+NAME = "Bello Jose Juan Diego"
 
 SM_INIT = 0
 SM_WAIT_FOR_NEW_GOAL = 10
@@ -49,7 +49,40 @@ class StanleyNode(Node):
         # Remember to keep w in (-w_max,w_max)
         # Return the tuple [v,w]
         #
-        
+        # Calcular el error de orientacion
+        theta_e = theta_i - math.atan2(robot_y - y_i, robot_x - x_i)
+
+        # Mantener el angulo dentro del intervalo (-pi, pi]
+        theta_e = (theta_e + math.pi) % (2 * math.pi) - math.pi
+        if theta_e <= -math.pi:
+            theta_e = math.pi
+
+        # Calcular la distancia entre el robot y el punto de la ruta
+        distance = math.sqrt((robot_x - x_i)**2 + (robot_y - y_i)**2)
+
+        # Asignar signo a la distancia
+        if theta_e > 0:
+            delta_t = distance
+        elif theta_e < 0:
+            delta_t = -distance
+        else:
+            delta_t = 0.0
+
+        # Calcular el error angular del robot respecto a la ruta
+        delta_theta = theta_i - robot_a
+        delta_theta = (delta_theta + math.pi) % (2 * math.pi) - math.pi
+        if delta_theta <= -math.pi:
+            delta_theta = math.pi
+
+        # Calcular velocidad lineal
+        v = v_max * math.exp(-Kv * (delta_t**2 + delta_theta**2))
+
+        # Calcular velocidad angular
+        w = Ka * delta_theta + Kd * delta_t
+
+        # Limitar la velocidad angular
+        w = max(-w_max, min(w, w_max))
+
         return [v,w]
 
     def get_nearest_point_and_angle(self, path, robot_x, robot_y):
