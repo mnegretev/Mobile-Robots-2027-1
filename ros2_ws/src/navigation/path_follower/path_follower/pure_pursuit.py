@@ -24,7 +24,7 @@ from datetime import datetime
 import math
 import numpy
 
-NAME = "FULL NAME"
+NAME = "Luis Yehosua Orihuela Castillo"
 
 SM_INIT = 0
 SM_WAIT_FOR_NEW_GOAL = 10
