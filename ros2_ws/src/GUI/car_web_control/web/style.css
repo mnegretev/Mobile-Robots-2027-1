@@ -1,0 +1,90 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background-color: #f4f4f4;
+}
+
+header {
+    background-color: #222;
+    color: white;
+    text-align: center;
+    padding: 20px;
+}
+
+main {
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+}
+
+.control-panel {
+    background-color: white;
+    width: 500px;
+    max-width: 100%;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+}
+
+.control-panel h2 {
+    text-align: center;
+}
+
+.control {
+    display: flex;
+    flex-direction: column;
+    margin: 30px 0;
+}
+
+.control label {
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.control input {
+    width: 100%;
+}
+
+.control span {
+    margin-top: 10px;
+    text-align: center;
+}
+
+#connection-status {
+    text-align: center;
+    font-weight: bold;
+}
+
+.connected {
+    color: green;
+}
+
+.disconnected {
+    color: red;
+}
+
+#send-button,
+#stop-button {
+    width: 100%;
+    padding: 15px;
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+#send-button {
+    background-color: #007bff;
+}
+
+#stop-button {
+    background-color: #d9534f;
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

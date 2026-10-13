@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Car Web GUI</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/roslib/build/roslib.min.js"></script>
+</head>
+
+<body>
+
+    <header>
+        <h1>Car Web GUI</h1>
+        <p>Interfaz web para controlar el vehículo</p>
+    </header>
+
+    <main>
+        <section class="control-panel">
+
+            <h2>Vehicle Control</h2>
+
+            <p id="connection-status" class="disconnected">
+                Disconnected
+            </p>
+
+            <div class="control">
+                <label for="speed">Speed</label>
+
+                <input
+                    type="range"
+                    id="speed"
+                    min="0"
+                    max="20"
+                    step="0.5"
+                    value="0"
+                >
+
+                <span id="speed-value">0.0 m/s</span>
+            </div>
+
+            <div class="control">
+                <label for="steering">Steering</label>
+
+                <input
+                    type="range"
+                    id="steering"
+                    min="-0.6"
+                    max="0.6"
+                    step="0.01"
+                    value="0"
+                >
+
+                <span id="steering-value">0.00 rad</span>
+            </div>
+
+            <button id="send-button" disabled>
+                SEND COMMAND
+            </button>
+
+            <button id="stop-button" disabled>
+                STOP
+            </button>
+
+        </section>
+    </main>
+
+    <script src="main.js"></script>
+
+</body>
+</html>
