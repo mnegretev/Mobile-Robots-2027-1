@@ -24,7 +24,7 @@ from datetime import datetime
 import math
 import numpy
 
-NAME = "FULL NAME"
+NAME = "PÉREZ ROJO ABRAHAM"
 
 SM_INIT = 0
 SM_WAIT_FOR_NEW_GOAL = 10
@@ -35,21 +35,22 @@ SM_SAVE_DATA = 50
 
 class PurePursuitNode(Node):
     def calculate_control(self, robot_x, robot_y, robot_a, goal_x, goal_y, alpha, beta, v_max, w_max):
-        v,w = 0,0
-        #
-        # TODO:
-        # Implement the control law given by:
-        #
-        # v = v_max*math.exp(-error_a*error_a/alpha)
-        # w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
-        #
-        # where error_a is the angle error
-        # and v_max, w_max, alpha and beta, are tunning constants.
-        # Remember to keep error angle in the interval (-pi,pi]
-        # Return the tuple [v,w]
-        #
+        # Calcular el ángulo hacia el punto meta
+        theta_g = math.atan2(goal_y - robot_y, goal_x - robot_x)
         
-        return [v,w]
+        # Calcular el error de ángulo (e_a)
+        error_a = theta_g - robot_a
+        
+        # Normalizar el error para mantenerlo en el intervalo (-pi, pi]
+        error_a = (error_a + math.pi) % (2 * math.pi) - math.pi
+        
+        # Aplicar la ley de control para la velocidad lineal (v)
+        v = v_max * math.exp(-(error_a**2) / alpha)
+        
+        # Aplicar la ley de control para la velocidad angular (w)
+        w = w_max * (2 / (1 + math.exp(-error_a / beta)) - 1)
+        
+        return [v, w]
 
     def pure_pursuit(self, path, final_angle, alpha, beta, v_max, w_max, tol_d, tol_a):
         #

@@ -24,7 +24,7 @@ from datetime import datetime
 import math
 import numpy
 
-NAME = "FULL NAME"
+NAME = "PÉREZ ROJO ABRAHAM"
 
 SM_INIT = 0
 SM_WAIT_FOR_NEW_GOAL = 10
@@ -35,22 +35,38 @@ SM_SAVE_DATA = 50
 
 class StanleyNode(Node):
     def calculate_control(self, robot_x, robot_y, robot_a, x_i, y_i, theta_i, Kd, Ka, v_max, w_max):
-        v,w = 0,0
         Kv = 5.0
-        #
-        # TODO:
-        # Implement the Stanley controller given by:
-        #
-        # theta_e = error angle between theta_i and the vector from point (xi,yi) to robot position
-        # et = signed distance from point (xi,yi) to robot position
-        # alpha = (theta_ i - robot_a ) remeber to keep angle in (-pi,pi]
-        # v = v_max*e^(-Kv*(et^2+alpha^2))
-        # w = Ka*alpha + Kd*et
-        # Remember to keep w in (-w_max,w_max)
-        # Return the tuple [v,w]
-        #
         
-        return [v,w]
+        # Diferencias de posición entre el robot y el punto de la ruta
+        dx = robot_x - x_i
+        dy = robot_y - y_i
+        
+        # Ángulo del vector desde el punto (x_i, y_i) hacia el robot
+        theta_vec = math.atan2(dy, dx)
+        
+        # CORRECCIÓN: Invertir el orden para que el giro compense correctamente el error
+        theta_e = theta_i - theta_vec
+        theta_e = (theta_e + math.pi) % (2 * math.pi) - math.pi
+        
+        # Distancia con signo (et o delta_t)
+        distance = math.sqrt(dx**2 + dy**2)
+        et = math.copysign(1.0, theta_e) * distance
+        
+        # Error de orientación (alpha o delta_theta)
+        alpha = theta_i - robot_a
+        # Mantener el ángulo alpha en el intervalo (-pi, pi]
+        alpha = (alpha + math.pi) % (2 * math.pi) - math.pi
+        
+        # Ley de control para la velocidad lineal (v)
+        v = v_max * math.exp(-Kv * (et**2 + alpha**2))
+        
+        # Ley de control para la velocidad angular (w)
+        w = Ka * alpha + Kd * et
+        
+        # Saturar la velocidad angular para mantenerla en los límites [-w_max, w_max]
+        w = max(-w_max, min(w, w_max))
+        
+        return [v, w]
 
     def get_nearest_point_and_angle(self, path, robot_x, robot_y):
         xi, yi = 0,0
