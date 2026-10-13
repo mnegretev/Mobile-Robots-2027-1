@@ -4,7 +4,7 @@
  *
  * Instructions:
  * Write the code necessary to implement localization by particle filters.
- * Modify only the sections marked with the TODO comment. 
+ * Modify only the sections marked with the TODO comment.
  */
 #include "particle_filter/ray_tracer.h"
 #define FULL_NAME "FULL NAME"
@@ -70,7 +70,7 @@ public:
     {
 	/*
 	 * TODO:
-	 * Review the code to simulate a laser scan for each particle given the set of particles and a static map. 
+	 * Review the code to simulate a laser scan for each particle given the set of particles and a static map.
 	 */
 	std::vector<sensor_msgs::msg::LaserScan> simulated_scans(particles.size());
 	for(size_t i=0; i < particles.size(); i++)
@@ -80,9 +80,9 @@ public:
 	    sensor_pose.position.y    = particles[i].y;
 	    sensor_pose.orientation.w = cos(particles[i].theta/2);
 	    sensor_pose.orientation.z = sin(particles[i].theta/2);
-	    
+
 	    simulated_scans[i] = ray_tracer::simulateRangeScan(map, sensor_pose, sensor_specs);
-	    
+
 	}
 	return simulated_scans;
     }
@@ -104,7 +104,7 @@ public:
 	 * When comparing readings, for each reading in the simulated scan, you should skip 'downsampling' readings
 	 * in the real sensor.
 	 * IMPORTANT NOTE 2. Both, simulated an real scans, can have infinite distances. Thus, when comparing readings,
-	 * ensure both simulated and real ranges are finite values. 
+	 * ensure both simulated and real ranges are finite values.
 	 */
 	size_t n = simulated_scans.size();
 	if(n == 0)
@@ -112,59 +112,69 @@ public:
 	if(downsampling < 1)
 	    downsampling = 1;
 
-	// Step 1. Mean squared error between each simulated scan and the real scan.
-	// An error of -1 marks a particle with no comparable (finite) readings.
-	std::vector<double> errors(n, -1.0);
-	double min_error = -1.0;
-	for(size_t i=0; i < n; i++)
+	// Step 1. DIFFERENCE between the real scan and the scan simulated for each particle (slide 106):
+	//
+	//         delta_p = (1/M) * sum_{i=0}^{M-1} | d_real[N*i] - d_sim_p[i] |
+	//
+	// delta_p is a distance: 0 for identical scans, and the larger the more different they are.
+	// It is NOT the similarity yet (that is Step 2).
+	// N = downsampling. M = number of readings actually compared (pairs with a non-finite reading are skipped).
+	// delta_p = -1 marks a particle without any comparable reading.
+	std::vector<double> delta(n, -1.0);
+	double min_delta = -1.0;
+	for(size_t p=0; p < n; p++)
 	{
 	    double sum = 0;
-	    int count = 0;
-	    for(size_t j=0; j < simulated_scans[i].ranges.size(); j++)
+	    int M = 0;
+	    for(size_t i=0; i < simulated_scans[p].ranges.size(); i++)
 	    {
-		size_t k = j*downsampling;           // matching reading in the real (not downsampled) scan
+		size_t k = i*downsampling;           // matching reading in the real (not downsampled) scan
 		if(k >= real_scan.ranges.size())
 		    break;
-		double sim  = simulated_scans[i].ranges[j];
-		double real = real_scan.ranges[k];
-		if(!std::isfinite(sim) || !std::isfinite(real))
+		double d_sim  = simulated_scans[p].ranges[i];
+		double d_real = real_scan.ranges[k];
+		if(!std::isfinite(d_sim) || !std::isfinite(d_real))
 		    continue;
-		sum += (sim - real)*(sim - real);
-		count++;
+		sum += fabs(d_real - d_sim);
+		M++;
 	    }
-	    if(count > 0)
+	    if(M > 0)
 	    {
-		errors[i] = sum/count;
-		if(min_error < 0 || errors[i] < min_error)
-		    min_error = errors[i];
+		delta[p] = sum/M;
+		if(min_delta < 0 || delta[p] < min_delta)
+		    min_delta = delta[p];
 	    }
 	}
 
-	// Nothing comparable at all: fall back to a uniform distribution
-	if(min_error < 0)
+	// Nothing comparable at all: every particle is equally likely
+	if(min_delta < 0)
 	{
-	    for(size_t i=0; i < n; i++)
-		similarities[i] = 1.0/n;
+	    for(size_t p=0; p < n; p++)
+		similarities[p] = 1.0/n;
 	    return similarities;
 	}
 
-	// Step 2. Gaussian likelihood exp(-error/sigma2).
-	// The minimum error is subtracted first so the best particle always gets exp(0)=1 and
-	// the exponentials do not underflow to zero for every particle.
+	// Step 2. SIMILARITY (slide 106):   s_p = exp(-delta_p / sigma2)
+	// delta_p = 0 (identical scans) gives s_p = 1, and s_p tends to 0 as the scans become more different,
+	// i.e. the MORE SIMILAR the scans, the LARGER the value.
+	// min_delta is subtracted inside the exponent only for numerical safety: it multiplies every s_p by the
+	// same constant, which cancels out in Step 3, but avoids exp() underflowing to 0 for ALL the particles
+	// when every one of them is far from the real scan (that would give 0/0 when normalizing).
+	// A particle without comparable readings gets similarity 0.
 	double total = 0;
-	for(size_t i=0; i < n; i++)
+	for(size_t p=0; p < n; p++)
 	{
-	    similarities[i] = (errors[i] < 0) ? 0.0 : exp(-(errors[i] - min_error)/sigma2);
-	    total += similarities[i];
+	    similarities[p] = (delta[p] < 0) ? 0.0 : exp(-(delta[p] - min_delta)/sigma2);
+	    total += similarities[p];
 	}
 
-	// Step 3. Normalize so that the sum is 1.0
-	for(size_t i=0; i < n; i++)
-	    similarities[i] /= total;
-	
+	// Step 3. Normalize: the sum of all similarities must be 1.0 (they become a probability distribution)
+	for(size_t p=0; p < n; p++)
+	    similarities[p] /= total;
+
 	return similarities;
     }
-    
+
     static int random_choice(std::vector<double>& probabilities)
     {
 	random_numbers::RandomNumberGenerator rnd;
@@ -173,12 +183,12 @@ public:
 	 *
 	 * Write an algorithm to choice an integer in the range [0, N-1], with N, the length of 'probabilities'.
 	 * Probability of picking an integer 'i' is given by the corresponding probabilities[i] value.
-	 * Return the chosen integer. 
+	 * Return the chosen integer.
 	 */
 	// Roulette wheel: draw r in [0,1) and return the first index where the cumulative sum reaches r
 	if(probabilities.empty())
 	    return -1;
-	
+
 	double r = rnd.uniformReal(0.0, 1.0);
 	double cumulative = 0;
 	int last_valid = -1;                         // last index with non-zero probability
@@ -223,5 +233,5 @@ public:
 	 */
 	return resampled_particles;
     }
-    
+
 };
