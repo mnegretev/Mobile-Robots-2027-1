@@ -24,7 +24,7 @@ from datetime import datetime
 import math
 import numpy
 
-NAME = "FULL NAME"
+NAME = "Omar Rosario Carrasco"
 
 SM_INIT = 0
 SM_WAIT_FOR_NEW_GOAL = 10
@@ -49,7 +49,23 @@ class StanleyNode(Node):
         # Remember to keep w in (-w_max,w_max)
         # Return the tuple [v,w]
         #
-        
+        # Angle between the path tangent and the vector from path point to robot,
+        # wrapped to [-pi, pi). Its sign tells on which side of the path the robot is.
+        theta_e = theta_i - math.atan2(robot_y - y_i, robot_x - x_i)
+        theta_e = (theta_e + math.pi) % (2*math.pi) - math.pi
+
+        # Signed cross-track distance
+        sign = 1.0 if theta_e > 0 else (-1.0 if theta_e < 0 else 0.0)
+        et = sign*math.sqrt((robot_x - x_i)**2 + (robot_y - y_i)**2)
+
+        # Orientation error wrapped to [-pi, pi)
+        alpha = theta_i - robot_a
+        alpha = (alpha + math.pi) % (2*math.pi) - math.pi
+
+        v = v_max*math.exp(-Kv*(et*et + alpha*alpha))
+        w = Ka*alpha + Kd*et
+        w = max(-w_max, min(w_max, w))
+
         return [v,w]
 
     def get_nearest_point_and_angle(self, path, robot_x, robot_y):
