@@ -24,7 +24,7 @@ from datetime import datetime
 import math
 import numpy
 
-NAME = "FULL NAME"
+NAME = "LEONARDO ALEJANDRO GARCIA LERMA"
 
 SM_INIT = 0
 SM_WAIT_FOR_NEW_GOAL = 10
@@ -35,22 +35,35 @@ SM_SAVE_DATA = 50
 
 class StanleyNode(Node):
     def calculate_control(self, robot_x, robot_y, robot_a, x_i, y_i, theta_i, Kd, Ka, v_max, w_max):
-        v,w = 0,0
         Kv = 5.0
-        #
-        # TODO:
-        # Implement the Stanley controller given by:
-        #
-        # theta_e = error angle between theta_i and the vector from point (xi,yi) to robot position
-        # et = signed distance from point (xi,yi) to robot position
-        # alpha = (theta_ i - robot_a ) remeber to keep angle in (-pi,pi]
-        # v = v_max*e^(-Kv*(et^2+alpha^2))
-        # w = Ka*alpha + Kd*et
-        # Remember to keep w in (-w_max,w_max)
-        # Return the tuple [v,w]
-        #
         
-        return [v,w]
+        # Calcular theta_e
+        theta_e = theta_i - math.atan2(robot_y - y_i, robot_x - x_i)
+        
+        # Calcular el error lateral (delta_t)
+        sgn = 1.0 if theta_e >= 0.0 else -1.0
+        delta_t = sgn * math.sqrt((robot_x - x_i)**2 + (robot_y - y_i)**2)
+        
+        # Calcular la diferencia de orientación (delta_theta)
+        delta_theta = theta_i - robot_a
+        # Normalizar el ángulo para mantenerlo entre -pi y pi
+        delta_theta = (delta_theta + math.pi) % (2 * math.pi) - math.pi
+        
+        # Calcular velocidad lineal v
+        v = v_max * math.exp(-Kv * (delta_t**2 + delta_theta**2))
+        
+        # Calcular velocidad angular w
+        w_raw = (Ka * delta_theta) + (Kd * delta_t)
+        
+        # Aplicar saturación a w
+        if w_raw > w_max:
+            w = w_max
+        elif w_raw < -w_max:
+            w = -w_max
+        else:
+            w = w_raw
+            
+        return [v, w]
 
     def get_nearest_point_and_angle(self, path, robot_x, robot_y):
         xi, yi = 0,0
@@ -262,4 +275,3 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
-
