@@ -24,7 +24,7 @@ from datetime import datetime
 import math
 import numpy
 
-NAME = "FULL NAME"
+NAME = "Leonardo Santos Vicente"
 
 SM_INIT = 0
 SM_WAIT_FOR_NEW_GOAL = 10
@@ -48,7 +48,11 @@ class PurePursuitNode(Node):
         # Remember to keep error angle in the interval (-pi,pi]
         # Return the tuple [v,w]
         #
-        
+        error_a = math.atan2(goal_y - robot_y, goal_x - robot_x) - robot_a
+        error_a = (error_a + math.pi) % (2 * math.pi) - math.pi
+
+        v = v_max * math.exp(-(error_a * error_a) / alpha)
+        w = w_max * (2 / (1 + math.exp(-error_a / beta)) - 1)
         return [v,w]
 
     def pure_pursuit(self, path, final_angle, alpha, beta, v_max, w_max, tol_d, tol_a):
@@ -224,6 +228,7 @@ class PurePursuitNode(Node):
 
             elif state == SM_SAVE_DATA:
                 self.data_folder = self.get_parameter('folder').get_parameter_value().string_value
+                self.get_logger().info(f"Entrando a SM_SAVE_DATA. Carpeta: {self.data_folder}")
                 sufix = datetime.now().strftime("%Y%m%dT%H%M%S")
                 s = ""
                 for d in self.nav_data:
@@ -231,6 +236,19 @@ class PurePursuitNode(Node):
                 f = open(self.data_folder + "/robot_pure_pursuit" + sufix + ".txt", "w")
                 f.write(s)
                 f.close()
+                f = open(self.data_folder + "/robot_pure_pursuit" + sufix + ".txt", "w")
+                f.write(s)
+                f.close()
+                self.get_logger().info("Archivo de datos del robot guardado correctamente")
+
+                s = ""
+                for p in path_points:
+                    s += str(p[0]) + ',' + str(p[1]) + '\n'
+
+                f = open(self.data_folder + "/goal_pure_pursuit" + sufix + ".txt", "w")
+                f.write(s)
+                f.close()
+                self.get_logger().info("Archivo de puntos de la trayectoria guardado correctamente")
                 s = ""
                 for p in path_points:
                     s += str(p[0]) + ',' + str(p[1]) + '\n'
