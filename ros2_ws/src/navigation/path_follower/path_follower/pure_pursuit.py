@@ -40,13 +40,17 @@ class PurePursuitNode(Node):
         # TODO:
         # Implement the control law given by:
         #
-        # v = v_max*math.exp(-error_a*error_a/alpha)
-        # w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
-        #
-        # where error_a is the angle error
-        # and v_max, w_max, alpha and beta, are tunning constants.
-        # Remember to keep error angle in the interval (-pi,pi]
-        # Return the tuple [v,w]
+        # error_a = atan2(yg - yr, xg - xr) - robot_a
+        error_a = math.atan2(goal_y - robot_y, goal_x - robot_x) - robot_a
+        
+        # Keep error angle in the interval (-pi, pi]
+        error_a = (error_a + math.pi) % (2 * math.pi) - math.pi
+        
+        # v = v_max * math.exp(-error_a*error_a/alpha)
+        v = v_max * math.exp(-(error_a**2) / alpha)
+        
+        # w = w_max * (2 / (1 + math.exp(-error_a/beta)) - 1)
+        w = w_max * (2.0 / (1.0 + math.exp(-error_a / beta)) - 1.0)
         #
         
         return [v,w]

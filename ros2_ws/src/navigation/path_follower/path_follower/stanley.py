@@ -24,7 +24,7 @@ from datetime import datetime
 import math
 import numpy
 
-NAME = "FULL NAME"
+NAME = "Luis Yehosua Orihuela Castillo"
 
 SM_INIT = 0
 SM_WAIT_FOR_NEW_GOAL = 10
@@ -42,12 +42,23 @@ class StanleyNode(Node):
         # Implement the Stanley controller given by:
         #
         # theta_e = error angle between theta_i and the vector from point (xi,yi) to robot position
+        theta_e = theta_i - math.atan2(robot_y - y_i, robot_x - x_i)
+        
         # et = signed distance from point (xi,yi) to robot position
-        # alpha = (theta_ i - robot_a ) remeber to keep angle in (-pi,pi]
+        dt = math.copysign(1.0, theta_e) * math.hypot(robot_x - x_i, robot_y - y_i)
+        
+        # alpha = (theta_i - robot_a) bounded to (-pi, pi]
+        dtheta = theta_i - robot_a
+        dtheta = (dtheta + math.pi) % (2 * math.pi) - math.pi
+        
         # v = v_max*e^(-Kv*(et^2+alpha^2))
+        v = v_max * math.exp(-Kv * (dt**2 + dtheta**2))
+        
         # w = Ka*alpha + Kd*et
-        # Remember to keep w in (-w_max,w_max)
-        # Return the tuple [v,w]
+        w = Ka * dtheta + Kd * dt
+        
+        # Keep w in (-w_max, w_max)
+        w = max(-w_max, min(w, w_max))
         #
         
         return [v,w]
