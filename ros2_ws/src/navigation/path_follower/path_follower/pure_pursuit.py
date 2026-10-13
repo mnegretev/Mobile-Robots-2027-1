@@ -24,7 +24,7 @@ from datetime import datetime
 import math
 import numpy
 
-NAME = "FULL NAME"
+NAME = "Martinez Cruz Lizeth"
 
 SM_INIT = 0
 SM_WAIT_FOR_NEW_GOAL = 10
@@ -35,21 +35,20 @@ SM_SAVE_DATA = 50
 
 class PurePursuitNode(Node):
     def calculate_control(self, robot_x, robot_y, robot_a, goal_x, goal_y, alpha, beta, v_max, w_max):
-        v,w = 0,0
-        #
-        # TODO:
-        # Implement the control law given by:
-        #
-        # v = v_max*math.exp(-error_a*error_a/alpha)
-        # w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
-        #
-        # where error_a is the angle error
-        # and v_max, w_max, alpha and beta, are tunning constants.
-        # Remember to keep error angle in the interval (-pi,pi]
-        # Return the tuple [v,w]
-        #
-        
-        return [v,w]
+        # Dirección desde el robot hacia el punto deseado.
+        desired_angle = math.atan2(goal_y - robot_y, goal_x - robot_x)
+
+        # Error angular limitado al intervalo (-pi, pi].
+        error_a = desired_angle - robot_a
+        error_a = math.atan2(math.sin(error_a),math.cos(error_a))
+        if error_a <= -math.pi:
+            error_a = math.pi
+
+        # Velocidades según las ecuaciones de la tarea.
+        v = v_max * math.exp(-(error_a * error_a) / alpha)
+        w = w_max * math.tanh(error_a / (2.0 * beta))
+
+        return [v, w]
 
     def pure_pursuit(self, path, final_angle, alpha, beta, v_max, w_max, tol_d, tol_a):
         #
@@ -78,11 +77,20 @@ class PurePursuitNode(Node):
             if numpy.linalg.norm(Pg - Pr) < 0.3:
                 idx = min(idx+1, len(path)-1)
                 Pg = path[idx]
-                
-        while abs(final_angle - theta_r) > tol_a and rclpy.ok():
-            error_a = (final_angle - theta_r + math.pi)%(2*math.pi) - math.pi
-            w = w_max*(2/(1 + math.exp(-(error_a)/beta)) - 1)
-            self.publish_and_save_data(Pr[0], Pr[1], theta_r, 0.0,w)
+           
+        while rclpy.ok():
+            error_a = math.atan2(
+                math.sin(final_angle - theta_r),
+                math.cos(final_angle - theta_r)
+            )
+
+            if abs(error_a) <= tol_a:
+                break
+
+            w = w_max * math.tanh(error_a / (2.0 * beta))
+            self.publish_and_save_data(
+                Pr[0], Pr[1], theta_r, 0.0, w
+            )
             Pr, theta_r = self.get_robot_pose()
         #
         # END OF WHILE
@@ -208,6 +216,7 @@ class PurePursuitNode(Node):
                 state = SM_FOLLOWING_PATH
 
             elif state == SM_FOLLOWING_PATH:
+                self.nav_data = []
                 v_max = self.get_parameter('v_max').get_parameter_value().double_value
                 w_max = self.get_parameter('w_max').get_parameter_value().double_value
                 alpha = self.get_parameter('alpha').get_parameter_value().double_value

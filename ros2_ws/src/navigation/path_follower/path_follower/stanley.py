@@ -24,7 +24,7 @@ from datetime import datetime
 import math
 import numpy
 
-NAME = "FULL NAME"
+NAME = "Martinez CRuz Lizeth"
 
 SM_INIT = 0
 SM_WAIT_FOR_NEW_GOAL = 10
@@ -35,22 +35,33 @@ SM_SAVE_DATA = 50
 
 class StanleyNode(Node):
     def calculate_control(self, robot_x, robot_y, robot_a, x_i, y_i, theta_i, Kd, Ka, v_max, w_max):
-        v,w = 0,0
         Kv = 5.0
-        #
-        # TODO:
-        # Implement the Stanley controller given by:
-        #
-        # theta_e = error angle between theta_i and the vector from point (xi,yi) to robot position
-        # et = signed distance from point (xi,yi) to robot position
-        # alpha = (theta_ i - robot_a ) remeber to keep angle in (-pi,pi]
-        # v = v_max*e^(-Kv*(et^2+alpha^2))
-        # w = Ka*alpha + Kd*et
-        # Remember to keep w in (-w_max,w_max)
-        # Return the tuple [v,w]
-        #
-        
-        return [v,w]
+
+        # Vector desde el punto de la ruta hacia el robot.
+        dx = robot_x - x_i
+        dy = robot_y - y_i
+        distance = math.hypot(dx, dy)
+
+        # Ángulo para determinar el signo del error de distancia.
+        theta_e = theta_i - math.atan2(dy, dx)
+        theta_e = math.atan2(math.sin(theta_e), math.cos(theta_e))
+        if theta_e <= -math.pi:
+            theta_e = math.pi
+
+        error_t = float(numpy.sign(theta_e)) * distance
+
+        # Error entre la orientación de la ruta y la del robot.
+        error_a = theta_i - robot_a
+        error_a = math.atan2(math.sin(error_a), math.cos(error_a))
+        if error_a <= -math.pi:
+            error_a = math.pi
+
+        # Velocidad lineal y giro limitado.
+        v = v_max * math.exp(-Kv * (error_t**2 + error_a**2))
+        w = Ka * error_a + Kd * error_t
+        w = max(-w_max, min(w_max, w))
+
+        return [v, w]
 
     def get_nearest_point_and_angle(self, path, robot_x, robot_y):
         xi, yi = 0,0
@@ -86,12 +97,21 @@ class StanleyNode(Node):
             self.publish_and_save_data(Pr[0], Pr[1], theta_r, v, w)
             Pr, theta_r = self.get_robot_pose()
 
-        while abs(final_angle - theta_r) > tol_a and rclpy.ok():
-            error_a = (final_angle - theta_r + math.pi)%(2*math.pi) - math.pi
-            w = w_max*(2/(1 + math.exp(-(error_a)/0.1)) - 1)
-            self.publish_and_save_data(Pr[0], Pr[1], theta_r, 0.0,w)
+        while rclpy.ok():
+            error_a = math.atan2(
+                math.sin(final_angle - theta_r),
+                math.cos(final_angle - theta_r)
+            )
+
+            if abs(error_a) <= tol_a:
+                break
+
+            w = w_max * math.tanh(error_a / 0.2)
+            self.publish_and_save_data(
+                Pr[0], Pr[1], theta_r, 0.0, w
+            )
             Pr, theta_r = self.get_robot_pose()
-            
+        
         #
         # END OF WHILE
         #
@@ -218,6 +238,7 @@ class StanleyNode(Node):
                 state = SM_FOLLOWING_PATH
 
             elif state == SM_FOLLOWING_PATH:
+                self.nav_data = []
                 v_max = self.get_parameter('v_max').get_parameter_value().double_value
                 w_max = self.get_parameter('w_max').get_parameter_value().double_value
                 Kd    = self.get_parameter('Kd').get_parameter_value().double_value
