@@ -24,7 +24,7 @@ from datetime import datetime
 import math
 import numpy
 
-NAME = "FULL NAME"
+NAME = "Romero Soto Raymundo"
 
 SM_INIT = 0
 SM_WAIT_FOR_NEW_GOAL = 10
@@ -39,9 +39,12 @@ class PurePursuitNode(Node):
         #
         # TODO:
         # Implement the control law given by:
+        theta_goal = math.atan2(goal_y - robot_y, goal_x - robot_x)
+        error_a = theta_goal - robot_a
+        error_a = (theta_goal - robot_a + math.pi)% (2*math.pi) - math.pi
         #
-        # v = v_max*math.exp(-error_a*error_a/alpha)
-        # w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
+        v = v_max*math.exp((-error_a*error_a)/alpha)
+        w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
         #
         # where error_a is the angle error
         # and v_max, w_max, alpha and beta, are tunning constants.
