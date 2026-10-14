@@ -14,10 +14,12 @@ from geometry_msgs.msg import PoseStamped, Pose, Point
 from nav_msgs.msg import Path
 from nav_msgs.srv import *
 from builtin_interfaces.msg import Duration
+from std_msgs.msg import String
 from collections import deque
 import numpy
 import heapq
 import math
+import json
 
 NAME = "Omar Rosario Carrasco"
 
@@ -125,6 +127,18 @@ class AStarNode(Node):
         else:
             self.get_logger().info("Cannot plan path from  " + str([sx, sy])+" to "+str([gx, gy]) + " :'(")
 
+        metrics = {
+            'algorithm': 'a_star',
+            'success': len(path) > 0,
+            'exec_time_ms': delta_ms,
+            'num_points': len(path),
+            'start_x': sx, 'start_y': sy,
+            'goal_x': gx, 'goal_y': gy,
+            'diagonals': bool(use_diagonals),
+            'stamp_ns': self.get_clock().now().nanoseconds,
+        }
+        self.pub_metrics.publish(String(data=json.dumps(metrics)))
+
         self.msg_path = self.get_path_msg(path, res, zx, zy)
         resp.plan = self.msg_path
         return resp
@@ -142,6 +156,7 @@ class AStarNode(Node):
         self.declare_parameter('diagonals', False)
         self.srv_plan_path = self.create_service(GetPlan, '/path_planning/plan_path', self.callback_a_star)
         self.pub_path = self.create_publisher(Path, '/path_planning/path', 10)
+        self.pub_metrics = self.create_publisher(String, '/path_planning/plan_metrics', 10)
         self.msg_path = Path()
         self.timer = self.create_timer(0.5, self.callback_timer)
 

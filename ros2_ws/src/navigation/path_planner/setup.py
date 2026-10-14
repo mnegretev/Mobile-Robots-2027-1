@@ -28,7 +28,8 @@ setup(
             'path_smoothing_solved = path_planner.path_smoothing_solved:main',
             'pot_fields = path_planner.pot_fields:main',
             'pot_fields_solved = path_planner.pot_fields_solved:main',
-            
+            'experiment_runner = path_planner.experiment_runner:main',
+            'metrics_logger = path_planner.metrics_logger:main',
         ],
     },
 )

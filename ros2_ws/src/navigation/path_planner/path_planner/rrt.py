@@ -15,10 +15,12 @@ from visualization_msgs.msg import Marker
 from nav_msgs.msg import Path
 from nav_msgs.srv import *
 from builtin_interfaces.msg import Duration
+from std_msgs.msg import String
 from collections import deque
 import numpy
 import heapq
 import math
+import json
 
 NAME = "Omar Rosario Carrasco"
 
@@ -170,6 +172,18 @@ class RRTNode(Node):
         else:
             self.get_logger().info("Cannot plan path from  " + str([sx, sy])+" to "+str([gx, gy]) + " :'(")
 
+        metrics = {
+            'algorithm': 'rrt',
+            'success': len(path) > 1,
+            'exec_time_ms': delta_ms,
+            'num_points': len(path),
+            'start_x': sx, 'start_y': sy,
+            'goal_x': gx, 'goal_y': gy,
+            'epsilon': float(epsilon),
+            'n': int(max_attempts),
+            'stamp_ns': self.get_clock().now().nanoseconds,
+        }
+        self.pub_metrics.publish(String(data=json.dumps(metrics)))
 
         self.msg_tree = self.get_tree_marker(tree)
         self.msg_path = Path()
@@ -202,6 +216,7 @@ class RRTNode(Node):
         self.srv_plan_path = self.create_service(GetPlan, '/path_planning/plan_path', self.callback_rrt)
         self.pub_path = self.create_publisher(Path, '/path_planning/path', 10)
         self.pub_tree = self.create_publisher(Marker, '/path_planning/rrt_tree', 10)
+        self.pub_metrics = self.create_publisher(String, '/path_planning/plan_metrics', 10)
         self.msg_path = Path()
         self.msg_tree = self.get_tree_marker(TreeNode(0,0))
         self.timer = self.create_timer(0.5, self.callback_timer)
