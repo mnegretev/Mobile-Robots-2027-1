@@ -30,6 +30,10 @@ from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
+_THIS_DIR = os.path.dirname(os.path.realpath(__file__))
+_PRACTICA1_DIR = os.path.normpath(os.path.join(_THIS_DIR, '..', '..', 'practica1'))
+DEFAULT_CSV = os.path.join(_PRACTICA1_DIR, 'datos', 'resultados_practica01.csv')
+
 
 def launch_setup(context, *args, **kwargs):
     algorithm         = LaunchConfiguration('algorithm').perform(context)
@@ -40,7 +44,6 @@ def launch_setup(context, *args, **kwargs):
     cost_radius       = LaunchConfiguration('cost_radius').perform(context)
     use_gui           = LaunchConfiguration('use_gui').perform(context).lower() in ('true', '1')
     csv_path          = LaunchConfiguration('csv_path').perform(context)
-    table_path        = LaunchConfiguration('table_path').perform(context)
 
     if algorithm not in ('a_star', 'rrt'):
         raise RuntimeError("algorithm debe ser 'a_star' o 'rrt', recibido: '" + algorithm + "'")
@@ -115,7 +118,7 @@ def launch_setup(context, *args, **kwargs):
         executable='metrics_logger',
         name='metrics_logger',
         output='screen',
-        parameters=[{'csv_path': csv_path}, {'table_path': table_path}],
+        parameters=[{'csv_path': csv_path}],
     )
 
     actions = [
@@ -159,9 +162,7 @@ def generate_launch_description():
         DeclareLaunchArgument('cost_radius', default_value='0.2'),
         DeclareLaunchArgument('use_gui', default_value='true',
                                description='false para correr sin lira_gui/RViz (barridos headless)'),
-        DeclareLaunchArgument('csv_path',
-                               default_value=os.path.join(os.path.expanduser('~'), 'practica01_resultados.csv')),
-        DeclareLaunchArgument('table_path',
-                               default_value=os.path.join(os.path.expanduser('~'), 'tabla_comparativa_practica01.md')),
+        DeclareLaunchArgument('csv_path', default_value=DEFAULT_CSV,
+                               description='CSV donde metrics_logger guarda cada resultado (a_star y rrt juntos)'),
         OpaqueFunction(function=launch_setup),
     ])
