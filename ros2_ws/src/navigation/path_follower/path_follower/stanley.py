@@ -52,7 +52,7 @@ class StanleyNode(Node):
 
         theta_e = theta_i - math.atan2(robot_y - y_i, robot_x - x_i)
         distance = math.sqrt((robot_x - x_i)**2 + (robot_y - y_i)**2)
-        et = math.sign(theta_e) * distance
+        et = numpy.sign(theta_e) * distance
 
         alpha = (theta_i - robot_a + math.pi) % (2 * math.pi) - math.pi
         v = v_max * math.exp(-Kv * (et**2 + alpha**2))
