@@ -27,7 +27,8 @@ setup(
             'pure_pursuit = path_follower.pure_pursuit:main',
             'pure_pursuit_solved = path_follower.pure_pursuit_solved:main',
             'stanley = path_follower.stanley:main',
-            'stanley_solved = path_follower.stanley_solved:main'
+            'stanley_solved = path_follower.stanley_solved:main',
+            'experiment_runner = path_follower.experiment_runner:main'
         ],
     },
 )
