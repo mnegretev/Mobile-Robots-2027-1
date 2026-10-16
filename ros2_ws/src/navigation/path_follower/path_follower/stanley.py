@@ -24,7 +24,7 @@ from datetime import datetime
 import math
 import numpy
 
-NAME = "FULL NAME"
+NAME = "Segovia Merlin German 2027-1"
 
 SM_INIT = 0
 SM_WAIT_FOR_NEW_GOAL = 10
@@ -49,6 +49,17 @@ class StanleyNode(Node):
         # Remember to keep w in (-w_max,w_max)
         # Return the tuple [v,w]
         #
+        theta_e = theta_i - math.atan2(robot_y - y_i, robot_x - x_i)
+        theta_e = (theta_e + math.pi) % (2*math.pi) - math.pi
+        et = math.copysign(1.0, theta_e) * math.sqrt((robot_x - x_i)**2 + (robot_y - y_i)**2)
+        alpha = theta_i - robot_a
+        alpha = (alpha + math.pi) % (2*math.pi) - math.pi
+        v = v_max * math.exp(-Kv * (et**2 + alpha**2))
+        w = Ka * alpha + Kd * et
+        if w > w_max:
+            w = w_max
+        elif w < -w_max:
+            w = -w_max
         
         return [v,w]
 
@@ -143,8 +154,8 @@ class StanleyNode(Node):
         self.tf_listener = TransformListener(self.tf_buffer, self)
         self.declare_parameter('v_max', 0.5)
         self.declare_parameter('w_max', 1.0)
-        self.declare_parameter('Kd', 1.0)
-        self.declare_parameter('Ka', 1.0)
+        self.declare_parameter('Kd', 5.0)
+        self.declare_parameter('Ka', 5.0)
         self.declare_parameter('tol_dist',  0.3)
         self.declare_parameter('tol_angle', 0.1)
         self.declare_parameter('folder', self.data_folder)
