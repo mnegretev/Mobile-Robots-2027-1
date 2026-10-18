@@ -19,6 +19,9 @@
 #include "tf2_ros/transform_broadcaster.h"
 #include "tf2_ros/buffer.h"
 #include "ParticleFilter.h"
+#include <fstream>
+#include <iomanip>
+#include <string>
 
 class ParticleFilterNode : public rclcpp::Node
 {
@@ -123,7 +126,61 @@ public:
 	this->pub_particles->publish(this->get_pose_array(particles));
 	tf_odom_to_map = this->get_odom_to_map(particles);
 	this->tf_broadcaster->sendTransform(tf_odom_to_map);
+
+
+
+
+
+
+
+
+
+	
+
+	std::string data_file = this->declare_parameter<std::string>(
+    "data_file", "pf_datos.csv"
+	);
+
+	std::ofstream data(data_file);
+
+	if (!data.is_open())
+	{
+		RCLCPP_ERROR(this->get_logger(),
+					"No se pudo abrir el archivo: %s", data_file.c_str());
+		return;
+	}
+
+	data << std::setprecision(10);
+
+	data << "iteracion,tiempo_s,N,s2s,s2m,s2r,ds,"
+			"x_real,y_real,theta_real,"
+			"x_est,y_est,theta_est,"
+			"error_pos_m,error_ang_rad"
+		<< std::endl;
+
+	double start_time = this->get_clock()->now().seconds();
+
+	RCLCPP_INFO(this->get_logger(),
+				"Guardando datos en: %s", data_file.c_str());
+
+
+
+
+
+
+
+
+
+
 	int iteration = 0;
+
+
+
+	int consecutive_localized = 0;
+	int convergence_iteration = -1;
+
+
+
 	while(rclcpp::ok()){
 	    if(this->displacement_greater_than_threshold(delta_x, delta_y, delta_a)){
 		RCLCPP_INFO(this->get_logger(), "Updating (%d) localization with delta_x=%lf\tdelta_y=%lf\tdelta_a=%lf",(++iteration), delta_x, delta_y, delta_a);
@@ -148,7 +205,94 @@ public:
 		this->get_estimated_pose(particles, estimated_x, estimated_y, estimated_a);
 		RCLCPP_INFO(this->get_logger(), "Estimated pose: x=%lf\ty=%lf\ta=%lf",estimated_x, estimated_y, estimated_a);
 		RCLCPP_INFO(this->get_logger(), "Groundtruth pose: x=%lf\ty=%lf\ta=%lf \n",this->groundtruth_x, this->groundtruth_y, this->groundtruth_a);
-	    }
+	
+		
+
+
+
+
+
+
+
+
+		if (this->groundtruth_received)
+		{
+			double error_x = estimated_x - this->groundtruth_x;
+			double error_y = estimated_y - this->groundtruth_y;
+
+			double error_pos = sqrt(error_x * error_x + error_y * error_y);
+
+			double delta_angle = estimated_a - this->groundtruth_a;
+			double error_ang = fabs(atan2(sin(delta_angle), cos(delta_angle)));
+
+			double elapsed = this->get_clock()->now().seconds() - start_time;
+
+			data << iteration << "," << elapsed << ","
+				<< particles_N << ","
+				<< sigma2_sensor << ","
+				<< sigma2_movement << ","
+				<< sigma2_resampling << ","
+				<< laser_downsampling << ","
+				<< groundtruth_x << "," << groundtruth_y << ","
+				<< groundtruth_a << ","
+				<< estimated_x << "," << estimated_y << ","
+				<< estimated_a << ","
+				<< error_pos << "," << error_ang
+				<< std::endl;
+
+			RCLCPP_INFO(this->get_logger(),
+						"Error: posicion=%.3f m | orientacion=%.3f rad",
+						error_pos, error_ang);
+
+			
+		
+		if (error_pos <= 0.30 && error_ang <= 0.20)
+			consecutive_localized++;
+		else
+			consecutive_localized = 0;
+
+		if (consecutive_localized >= 5 && convergence_iteration < 0)
+		{
+			convergence_iteration = iteration;
+
+			RCLCPP_INFO(this->get_logger(),
+						"LOCALIZACION CONFIRMADA en iteracion %d. "
+						"Deten el movimiento y toma una captura de RViz.",
+						iteration);
+		}
+
+		if (convergence_iteration >= 0 &&
+			iteration == convergence_iteration + 10)
+		{
+			RCLCPP_INFO(this->get_logger(),
+						"PRUEBA COMPLETA: 10 actualizaciones posteriores "
+						"a la convergencia. Deten el robot y termina con Ctrl+C.");
+		}
+
+		if (iteration == 100 && convergence_iteration < 0)
+		{
+			RCLCPP_INFO(this->get_logger(),
+						"LIMITE DE PRUEBA: no se confirmo convergencia "
+						"en 100 actualizaciones. Deten el robot, "
+						"toma una captura de RViz y termina con Ctrl+C.");
+		}
+
+
+
+
+		}
+
+
+
+
+
+
+
+
+
+
+
+		}
 	    tf_odom_to_map.header.stamp = this->get_clock()->now();
 	    this->tf_broadcaster->sendTransform(tf_odom_to_map);
 	    rclcpp::spin_some(this->get_node_base_interface());
@@ -175,6 +319,12 @@ private:
     double groundtruth_y;
     double groundtruth_a;
 
+
+
+	bool groundtruth_received = false;
+
+
+
     geometry_msgs::msg::TransformStamped last_tf_odom;
     sensor_msgs::msg::LaserScan real_scan;
     sensor_msgs::msg::LaserScan simul_sensor_specs;
@@ -200,6 +350,13 @@ private:
 	this->groundtruth_a = atan2(z, w)*2;
 	if(this->groundtruth_a >   M_PI) this->groundtruth_a -= 2*M_PI;
 	if(this->groundtruth_a <= -M_PI) this->groundtruth_a += 2*M_PI;
+
+
+
+	this->groundtruth_received = true;
+
+
+
     }
 
     geometry_msgs::msg::TransformStamped get_odometry(){

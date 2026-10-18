@@ -7,7 +7,7 @@
  * Modify only the sections marked with the TODO comment. 
  */
 #include "particle_filter/ray_tracer.h"
-#define FULL_NAME "FULL NAME"
+#define FULL_NAME "SOLORIO GONZALEZ ALDO BRUNO"
 
 class ParticleFilter
 {
@@ -28,6 +28,17 @@ public:
 	
 	/*
 	 */
+
+
+	for (size_t i = 0; i < particles.size(); i++)
+	{
+		particles[i].x = rnd.uniformReal(min_x, max_x);
+		particles[i].y = rnd.uniformReal(min_y, max_y);
+		particles[i].theta = rnd.uniformReal(min_a, max_a);
+	}
+
+
+
 	return particles;
     }
 
@@ -45,6 +56,28 @@ public:
 	 * You can use the function rnd.gaussian(mean, variance)
 	 */
 	
+	double sigma = sqrt(sigma2);
+
+	for (size_t i = 0; i < particles.size(); i++)
+	{
+		double theta = particles[i].theta;
+
+		particles[i].x += delta_x * cos(theta)
+						- delta_y * sin(theta)
+						+ rnd.gaussian(0.0, sigma);
+
+		particles[i].y += delta_x * sin(theta)
+						+ delta_y * cos(theta)
+						+ rnd.gaussian(0.0, sigma);
+
+		particles[i].theta += delta_t + rnd.gaussian(0.0, sigma);
+
+		particles[i].theta = atan2(
+			sin(particles[i].theta),
+			cos(particles[i].theta)
+		);
+	}
+
     }
 
     static std::vector<sensor_msgs::msg::LaserScan> simulate_particle_scans(
@@ -91,6 +124,46 @@ public:
 	 * ensure both simulated and real ranges are finite values. 
 	 */
 	
+
+	for (size_t i = 0; i < simulated_scans.size(); i++)
+	{
+		double mean_diff = 0.0;
+
+		for (size_t j = 0; j < simulated_scans[i].ranges.size(); j++)
+		{
+			double real = real_scan.ranges[j * downsampling];
+			double simulated = simulated_scans[i].ranges[j];
+
+			if (std::isfinite(real) && std::isfinite(simulated) &&
+				real < real_scan.range_max &&
+				simulated < real_scan.range_max)
+			{
+				mean_diff += fabs(simulated - real);
+			}
+			else
+			{
+				mean_diff += real_scan.range_max;
+			}
+		}
+
+		mean_diff /= simulated_scans[i].ranges.size();
+		similarities[i] = exp(-mean_diff / sigma2);
+	}
+
+	double sum = 0.0;
+
+	for (size_t i = 0; i < similarities.size(); i++)
+		sum += similarities[i];
+
+	for (size_t i = 0; i < similarities.size(); i++)
+	{
+		if (sum > 0.0)
+			similarities[i] /= sum;
+		else
+			similarities[i] = 1.0 / similarities.size();
+	}
+
+
 	
 	return similarities;
     }
@@ -106,8 +179,21 @@ public:
 	 * Return the chosen integer. 
 	 */
 	
-	
-	return -1;
+
+
+	double beta = rnd.uniformReal(0.0, 1.0);
+
+	for (size_t i = 0; i < probabilities.size(); i++)
+	{
+		if (beta < probabilities[i])
+			return static_cast<int>(i);
+
+		beta -= probabilities[i];
+	}
+
+
+
+	return static_cast<int>(probabilities.size()) -1;
     }
 
     static std::vector<geometry_msgs::msg::Pose2D> resample_particles(
@@ -126,6 +212,29 @@ public:
 	
 	/*
 	 */
+
+
+
+	double sigma = sqrt(sigma2);
+
+	for (size_t i = 0; i < particles.size(); i++)
+	{
+		int idx = random_choice(probabilities);
+
+		resampled_particles[i] = particles[idx];
+
+		resampled_particles[i].x += rnd.gaussian(0.0, sigma);
+		resampled_particles[i].y += rnd.gaussian(0.0, sigma);
+		resampled_particles[i].theta += rnd.gaussian(0.0, sigma);
+
+		resampled_particles[i].theta = atan2(
+			sin(resampled_particles[i].theta),
+			cos(resampled_particles[i].theta)
+		);
+	}
+
+
+
 	return resampled_particles;
     }
     
