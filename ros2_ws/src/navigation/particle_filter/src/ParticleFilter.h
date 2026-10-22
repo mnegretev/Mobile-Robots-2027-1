@@ -7,7 +7,7 @@
  * Modify only the sections marked with the TODO comment. 
  */
 #include "particle_filter/ray_tracer.h"
-#define FULL_NAME "FULL NAME"
+#define FULL_NAME "Romero Soto Raymundo"
 
 class ParticleFilter
 {
@@ -25,7 +25,12 @@ public:
 	 * with positions uniformly distributed within bounding box given by min_x, ..., max_a.
 	 * To generate uniformly distributed random numbers, you can use the funcion rnd.uniformReal(min, max)
 	 */
-	
+	for (int i = 0; i < N; ++i)
+    {
+        particles[i].x = rnd.uniformReal(min_x, max_x);
+        particles[i].y = rnd.uniformReal(min_y, max_y);
+        particles[i].theta = rnd.uniformReal(min_a, max_a);
+    }
 	/*
 	 */
 	return particles;
@@ -44,7 +49,27 @@ public:
 	 * Add gaussian noise to each new position. Use sigma2 as variance.
 	 * You can use the function rnd.gaussian(mean, variance)
 	 */
-	
+	for (size_t i = 0; i < particles.size(); ++i)
+    {
+        // Obtengo la orientación de la i-ésima partícula
+        float theta_i = particles[i].theta;
+        
+        //Rotamos el desplazamiento (delta_x, delta_y) sobre el eje Z por el ángulo theta_i
+        float dx_global = delta_x * cos(theta_i) - delta_y * sin(theta_i);
+        float dy_global = delta_x * sin(theta_i) + delta_y * cos(theta_i);
+        
+        //Calculamos la nueva posición determinista
+        float new_x = particles[i].x + dx_global;
+        float new_y = particles[i].y + dy_global;
+        float new_theta = theta_i + delta_t;
+        
+        // se actualiza la partícula añadiendo el ruido gaussiano 
+        particles[i].x = rnd.gaussian(new_x, sigma2);
+        particles[i].y = rnd.gaussian(new_y, sigma2);
+        particles[i].theta = rnd.gaussian(new_theta, sigma2);
+        
+       
+    }
     }
 
     static std::vector<sensor_msgs::msg::LaserScan> simulate_particle_scans(
@@ -56,18 +81,25 @@ public:
 	 * TODO:
 	 * Review the code to simulate a laser scan for each particle given the set of particles and a static map. 
 	 */
-	std::vector<sensor_msgs::msg::LaserScan> simulated_scans(particles.size());
-	for(size_t i=0; i < particles.size(); i++)
-	{
-	    geometry_msgs::msg::Pose sensor_pose;
-	    sensor_pose.position.x    = particles[i].x;
-	    sensor_pose.position.y    = particles[i].y;
-	    sensor_pose.orientation.w = cos(particles[i].theta/2);
-	    sensor_pose.orientation.z = sin(particles[i].theta/2);
-	    
-	    simulated_scans[i] = ray_tracer::simulateRangeScan(map, sensor_pose, sensor_specs);
-	    
-	}
+    std::vector<sensor_msgs::msg::LaserScan> simulated_scans(particles.size());
+    for(size_t i=0; i < particles.size(); i++)
+    {
+        geometry_msgs::msg::Pose sensor_pose;
+        sensor_pose.position.x    = particles[i].x;
+        sensor_pose.position.y    = particles[i].y;
+        sensor_pose.orientation.w = cos(particles[i].theta/2);
+        sensor_pose.orientation.z = sin(particles[i].theta/2);
+        
+        // Bloque try-catch para evitar que el nodo aborte si una partícula sale del mapa
+        try {
+            simulated_scans[i] = ray_tracer::simulateRangeScan(map, sensor_pose, sensor_specs);
+        } 
+        catch (const ray_tracer::PointOutOfBoundsException& e) {
+            // Si la partícula cae fuera de los límites, no hacemos nada.
+            // simulated_scans[i] se queda vacío, por lo que su similitud será 0
+            // y el algoritmo la eliminará naturalmente en el paso de remuestreo.
+        }
+    }
 	return simulated_scans;
     }
 
@@ -91,7 +123,53 @@ public:
 	 * ensure both simulated and real ranges are finite values. 
 	 */
 	
-	
+	double total_similarity = 0.0;
+
+    for (size_t i = 0; i < simulated_scans.size(); ++i) {
+        double sum_diff = 0.0;
+        int valid_M = 0;
+        
+        // Iterar sobre las lecturas del sensor simulado
+        for (size_t j = 0; j < simulated_scans[i].ranges.size(); ++j) {
+            // El índice correspondiente en el sensor real considerando el downsampling
+            size_t real_idx = j * downsampling;
+            
+            if (real_idx < real_scan.ranges.size()) {
+                float sim_range = simulated_scans[i].ranges[j];
+                float real_range = real_scan.ranges[real_idx];
+                
+                // Asegurar que ambas lecturas sean valores finitos (no NaN ni Inf)
+                if (std::isfinite(sim_range) && std::isfinite(real_range)) {
+                    sum_diff += std::abs(real_range - sim_range);
+                    valid_M++;
+                }
+            }
+        }
+        
+        double s = 0.0;
+        if (valid_M > 0) {
+            // δ: media de los valores absolutos de las diferencias
+            double delta = sum_diff / valid_M;
+            // s: medida de similitud
+            s = std::exp(-delta / sigma2);
+        }
+        
+        similarities[i] = s;
+        total_similarity += s;
+    }
+    
+    // Normalizar las similitudes para que sumen 1 (distribución de probabilidad)
+    if (total_similarity > 0.0) {
+        for (size_t i = 0; i < similarities.size(); ++i) {
+            similarities[i] /= total_similarity;
+        }
+    } else {
+        // Respaldo en caso de que todas las similitudes sean 0
+        double uniform_prob = 1.0 / similarities.size();
+        for (size_t i = 0; i < similarities.size(); ++i) {
+            similarities[i] = uniform_prob;
+        }
+    }
 	return similarities;
     }
     
@@ -105,9 +183,22 @@ public:
 	 * Probability of picking an integer 'i' is given by the corresponding probabilities[i] value.
 	 * Return the chosen integer. 
 	 */
+	// Generar un número aleatorio entre 0.0 y 1.0
+    double r = rnd.uniformReal(0.0, 1.0);
+    double cumulative_probability = 0.0;
+    
+    for (size_t i = 0; i < probabilities.size(); ++i)
+    {
+        cumulative_probability += probabilities[i];
+        
+        // Si el número aleatorio cae dentro de la probabilidad acumulada actual, retornar el índice
+        if (r <= cumulative_probability)
+        {
+            return i;
+        }
+    }
 	
-	
-	return -1;
+	return probabilities.size() - 1;
     }
 
     static std::vector<geometry_msgs::msg::Pose2D> resample_particles(
@@ -123,7 +214,23 @@ public:
 	 * Use the random_choice function to pick a particle with the correct probability.
 	 * Add gaussian noise to each sampled particle (add noise to x,y and theta). Use sigma2 as noise variance.
 	 */
-	
+	for (size_t i = 0; i < particles.size(); ++i)
+    {
+        // 1. Elegir un índice aleatorio utilizando la distribución de probabilidad
+        int chosen_idx = random_choice(probabilities);
+        
+        // 2. Copiar la partícula seleccionada
+        geometry_msgs::msg::Pose2D p = particles[chosen_idx];
+        
+        // 3. Añadir ruido gaussiano en x, y, theta para evitar partículas repetidas
+        p.x = rnd.gaussian(p.x, sigma2);
+        p.y = rnd.gaussian(p.y, sigma2);
+        p.theta = rnd.gaussian(p.theta, sigma2);
+        
+        // 4. Guardar en el nuevo conjunto
+        resampled_particles[i] = p;
+    }
+    
 	/*
 	 */
 	return resampled_particles;
