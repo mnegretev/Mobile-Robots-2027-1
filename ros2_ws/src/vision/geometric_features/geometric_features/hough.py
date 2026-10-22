@@ -15,7 +15,7 @@ import numpy
 import cv2
 import math
 
-FULL_NAME = "FULL NAME"
+FULL_NAME = "Omar Rosario Carrasco"
 
 class HoughNode(Node):
     def callback_img(self, msg):
@@ -36,8 +36,45 @@ class HoughNode(Node):
         # Use the parameters self.canny_lower, self.canny_upper, self.rho, self.theta,
         # and self.hough_threshold
         #
-        
-        
+        # Escala de grises y bordes con Canny: la imagen binaria de bordes es la
+        # entrada de la Transformada Hough (solo votan los píxeles de borde)
+        img_gray  = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+        img_edges = cv2.Canny(img_gray, self.canny_lower, self.canny_upper)
+
+        # Solo se mide la detección de líneas: votación de cada píxel de borde en el
+        # acumulador (rho, theta) y búsqueda de las celdas con votos >= hough_threshold
+        t_start = self.get_clock().now()
+        lines = cv2.HoughLines(img_edges, self.rho, self.theta, self.hough_threshold)
+        t_ms = (self.get_clock().now() - t_start).nanoseconds / 1e6
+
+        # Cada línea llega en forma normal:  x*cos(th) + y*sin(th) = r
+        # (x0, y0) es el punto de la recta más cercano al origen y (-sin(th), cos(th))
+        # su dirección; se prolonga una diagonal de imagen hacia cada lado para que la
+        # recta cruce toda la ventana (cv2.line recorta lo que queda fuera).
+        # reshape(-1, 2) deja un par (r, th) por fila sin importar la versión de OpenCV
+        n_lines = 0
+        if lines is not None:
+            n_lines = len(lines)
+            diag = math.hypot(img_hough.shape[0], img_hough.shape[1])
+            for r, th in lines.reshape(-1, 2):
+                a, b = math.cos(th), math.sin(th)
+                x0, y0 = a*r, b*r
+                p1 = (int(x0 - diag*b), int(y0 + diag*a))
+                p2 = (int(x0 + diag*b), int(y0 - diag*a))
+                cv2.line(img_hough, p1, p2, (0, 0, 255), 2, cv2.LINE_AA)
+
+        # Ubuntu no es de tiempo real: además del tiempo del cuadro se acumula el
+        # promedio de todos los cuadros (para la tabla de tiempos del reporte)
+        self.times.append(t_ms)
+        t_avg = numpy.mean(self.times)
+        cv2.putText(img_hough, "time[ms]=%.2f" % t_ms, (10, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2)
+        cv2.putText(img_hough, "avg[ms]=%.2f  lines=%d" % (t_avg, n_lines), (10, 60),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+        if len(self.times) % 30 == 0:
+            self.get_logger().info("frames=%d  t_avg=%.3f ms  t_std=%.3f ms  lines=%d"
+                                   % (len(self.times), t_avg, numpy.std(self.times), n_lines))
+
         cv2.imshow("BGR Original", img_bgr)
         cv2.imshow("Houhgh", img_hough)
         cv2.waitKey(1)
@@ -47,6 +84,11 @@ class HoughNode(Node):
         super().__init__("hough_node")
         self.br = CvBridge()
         self.sub_img = self.create_subscription(Image, '/camera/image_raw', self.callback_img, 1)
+        # En house_simul (realsense:=True) el bridge de Gazebo publica la imagen RGB en
+        # /camera/color/image_raw (ver mbot_demo/config/gz_bridge.yaml), no en /camera/image_raw.
+        # Se escuchan ambos tópicos para que el nodo reciba imágenes en cualquiera de los dos casos.
+        self.sub_img_color = self.create_subscription(Image, '/camera/color/image_raw', self.callback_img, 1)
+        self.times = []    # Tiempos de detección [ms] de cada cuadro, para promediar
         self.declare_parameter("canny_l",10)
         self.declare_parameter("canny_u",20)
         self.declare_parameter("rho", 10)
