@@ -7,7 +7,7 @@
  * Modify only the sections marked with the TODO comment.
  */
 #include "particle_filter/ray_tracer.h"
-#define FULL_NAME "FULL NAME"
+#define FULL_NAME "Omar Rosario Carrasco"
 
 class ParticleFilter
 {
@@ -50,8 +50,8 @@ public:
 	 * You can use the function rnd.gaussian(mean, variance)
 	 */
 	// NOTE: rnd.gaussian(mean, stddev) receives a standard deviation, so sqrt(sigma2) is used
-	// to make sigma2 behave as a variance.
-	double sigma = sqrt(sigma2);
+	// to make sigma2 behave as a variance (sigma2 <= 0 means no noise).
+	double sigma = (sigma2 > 0) ? sqrt(sigma2) : 0.0;
 	for(size_t i=0; i < particles.size(); i++)
 	{
 	    double c = cos(particles[i].theta);
@@ -81,7 +81,19 @@ public:
 	    sensor_pose.orientation.w = cos(particles[i].theta/2);
 	    sensor_pose.orientation.z = sin(particles[i].theta/2);
 
-	    simulated_scans[i] = ray_tracer::simulateRangeScan(map, sensor_pose, sensor_specs);
+	    try
+	    {
+		simulated_scans[i] = ray_tracer::simulateRangeScan(map, sensor_pose, sensor_specs);
+	    }
+	    catch(const std::exception&)
+	    {
+		// The ray tracer throws PointOutOfBoundsException when the particle lies outside the map
+		// (the movement/resampling noise can push a particle beyond the grid, specially with large
+		// s2m or s2r). The robot cannot be there, so the particle gets a scan without readings:
+		// get_particle_similarities() gives it similarity 0 and it disappears in the resampling.
+		simulated_scans[i] = sensor_specs;
+		simulated_scans[i].ranges.clear();
+	    }
 
 	}
 	return simulated_scans;
@@ -111,6 +123,8 @@ public:
 	    return similarities;
 	if(downsampling < 1)
 	    downsampling = 1;
+	if(sigma2 <= 0)
+	    sigma2 = 1e-6;                           // avoids dividing by zero if s2s:=0
 
 	// Step 1. DIFFERENCE between the real scan and the scan simulated for each particle (slide 106):
 	//
@@ -218,7 +232,7 @@ public:
 	 * Use the random_choice function to pick a particle with the correct probability.
 	 * Add gaussian noise to each sampled particle (add noise to x,y and theta). Use sigma2 as noise variance.
 	 */
-	double sigma = sqrt(sigma2);                 // rnd.gaussian expects a standard deviation
+	double sigma = (sigma2 > 0) ? sqrt(sigma2) : 0.0;  // rnd.gaussian expects a standard deviation
 	for(size_t i=0; i < particles.size(); i++)
 	{
 	    int idx = random_choice(probabilities);

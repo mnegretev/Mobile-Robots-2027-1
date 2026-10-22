@@ -1,4 +1,4 @@
-*
+/*
  * MOBILE ROBOTS - FI-UNAM, 2027-1
  * CLUSTERING BY K-MEANS
  * Instructions:

@@ -1,0 +1,190 @@
+[INFO] [1792694378.858558528] [particle_filter]: INITIALIZING PARTICLE FILTER NODE - Omar Rosario Carrasco
+[INFO] [1792694378.874540832] [particle_filter]: Waiting for static map
+[INFO] [1792694379.471266217] [particle_filter]: Static map service is now available. Getting static map.
+[INFO] [1792694379.473318107] [particle_filter]: Got map with size 577 x 426
+[INFO] [1792694379.473425377] [particle_filter]: First sensor reading received with 480 ranges.
+[INFO] [1792694379.473445107] [particle_filter]: Waiting for odom transform to be available...
+[INFO] [1792694379.473558968] [particle_filter]: Odom transform is now available
+[INFO] [1792694379.473572578] [particle_filter]: Initializing particle filter with parameters: 
+[INFO] [1792694379.473581618] [particle_filter]: N=1000	 downsampling=10	
+[INFO] [1792694379.473591358] [particle_filter]: Sensor variance: 0.100000	Movement variance: 1.000000	Resampling variance: 0.010000
+[INFO] [1792694379.473608508] [particle_filter]: min_x=-5.000000	min_y=-4.000000	min_a=-3.140000
+[INFO] [1792694379.473618758] [particle_filter]: max_x=12.000000	max_y=4.000000	max_a=3.140000
+[INFO] [1792694379.473720308] [particle_filter]: Publishing initial distribution...
+[INFO] [1792694381.185952364] [particle_filter]: Updating (1) localization with delta_x=0.200528	delta_y=0.004681	delta_a=0.059388
+[INFO] [1792694381.210450008] [particle_filter]: Estimated pose: x=0.821897	y=-0.384594	a=0.069732
+[INFO] [1792694381.210505578] [particle_filter]: Groundtruth pose: x=0.165586	y=-0.007471	a=0.037905 
+
+[INFO] [1792694384.081642145] [particle_filter]: Updating (2) localization with delta_x=0.204935	delta_y=-0.002578	delta_a=-0.040013
+[INFO] [1792694384.110942250] [particle_filter]: Estimated pose: x=0.528495	y=0.008576	a=0.070613
+[INFO] [1792694384.110997090] [particle_filter]: Groundtruth pose: x=0.362880	y=0.003005	a=0.004417 
+
+[INFO] [1792694387.182797194] [particle_filter]: Updating (3) localization with delta_x=0.201320	delta_y=-0.003506	delta_a=-0.016214
+[INFO] [1792694387.211455406] [particle_filter]: Estimated pose: x=0.772524	y=-0.116510	a=0.041393
+[INFO] [1792694387.211509716] [particle_filter]: Groundtruth pose: x=0.556677	y=0.002976	a=-0.018969 
+
+[INFO] [1792694390.385542951] [particle_filter]: Updating (4) localization with delta_x=0.210397	delta_y=0.001370	delta_a=0.014952
+[INFO] [1792694390.412886047] [particle_filter]: Estimated pose: x=0.925219	y=0.165414	a=-0.046029
+[INFO] [1792694390.412963568] [particle_filter]: Groundtruth pose: x=0.760770	y=-0.001347	a=-0.008084 
+
+[INFO] [1792694393.686766943] [particle_filter]: Updating (5) localization with delta_x=0.209418	delta_y=0.004941	delta_a=0.036139
+[INFO] [1792694393.715095704] [particle_filter]: Estimated pose: x=1.211176	y=0.134302	a=0.024628
+[INFO] [1792694393.715173704] [particle_filter]: Groundtruth pose: x=0.976153	y=-0.004125	a=0.032971 
+
+[INFO] [1792694395.377038537] [particle_filter]: Updating (6) localization with delta_x=0.200204	delta_y=-0.005355	delta_a=-0.060540
+[INFO] [1792694395.404943296] [particle_filter]: Estimated pose: x=1.410967	y=0.107415	a=-0.088919
+[INFO] [1792694395.405017046] [particle_filter]: Groundtruth pose: x=1.183932	y=0.006413	a=-0.028438 
+
+[INFO] [1792694398.275300478] [particle_filter]: Updating (7) localization with delta_x=0.208516	delta_y=0.001818	delta_a=0.028396
+[INFO] [1792694398.304503613] [particle_filter]: Estimated pose: x=1.712185	y=-0.054276	a=-0.001177
+[INFO] [1792694398.304560993] [particle_filter]: Groundtruth pose: x=1.387257	y=-0.001463	a=-0.005491 
+
+[INFO] [1792694401.476815989] [particle_filter]: Updating (8) localization with delta_x=0.080731	delta_y=0.000321	delta_a=0.210606
+[INFO] [1792694401.505174470] [particle_filter]: Estimated pose: x=1.669557	y=0.096198	a=0.159407
+[INFO] [1792694401.505237590] [particle_filter]: Groundtruth pose: x=1.479342	y=-0.027567	a=0.176312 
+
+[INFO] [1792694403.569225339] [particle_filter]: Updating (9) localization with delta_x=-0.000000	delta_y=-0.000000	delta_a=0.211736
+[INFO] [1792694403.599446878] [particle_filter]: Estimated pose: x=1.625375	y=0.225243	a=0.334478
+[INFO] [1792694403.599518869] [particle_filter]: Groundtruth pose: x=1.486136	y=-0.052670	a=0.356344 
+
+[INFO] [1792694405.865787371] [particle_filter]: Updating (10) localization with delta_x=-0.000000	delta_y=-0.000000	delta_a=0.215006
+[INFO] [1792694405.894357033] [particle_filter]: Estimated pose: x=1.781208	y=0.131503	a=0.507317
+[INFO] [1792694405.894429224] [particle_filter]: Groundtruth pose: x=1.497387	y=-0.076571	a=0.539398 
+
+[INFO] [1792694407.103056103] [particle_filter]: Updating (11) localization with delta_x=-0.000000	delta_y=-0.000000	delta_a=0.211004
+[INFO] [1792694407.133105732] [particle_filter]: Estimated pose: x=1.797558	y=-0.060239	a=0.746820
+[INFO] [1792694407.133183992] [particle_filter]: Groundtruth pose: x=1.515999	y=-0.102059	a=0.757598 
+
+[INFO] [1792694408.996649225] [particle_filter]: Updating (12) localization with delta_x=-0.000000	delta_y=-0.000000	delta_a=0.211152
+[INFO] [1792694409.026541813] [particle_filter]: Estimated pose: x=1.726775	y=-0.019102	a=0.965177
+[INFO] [1792694409.026596483] [particle_filter]: Groundtruth pose: x=1.536211	y=-0.120982	a=0.949512 
+
+[INFO] [1792694411.091121934] [particle_filter]: Updating (13) localization with delta_x=-0.000000	delta_y=-0.000000	delta_a=0.203148
+[INFO] [1792694411.119516655] [particle_filter]: Estimated pose: x=1.617638	y=-0.102814	a=1.105614
+[INFO] [1792694411.119579366] [particle_filter]: Groundtruth pose: x=1.559661	y=-0.132740	a=1.132012 
+
+[INFO] [1792694413.385682767] [particle_filter]: Updating (14) localization with delta_x=-0.000000	delta_y=-0.000000	delta_a=0.231446
+[INFO] [1792694413.415295944] [particle_filter]: Estimated pose: x=1.551773	y=0.084596	a=1.297552
+[INFO] [1792694413.415368604] [particle_filter]: Groundtruth pose: x=1.592635	y=-0.140516	a=1.365361 
+
+[INFO] [1792694415.580768970] [particle_filter]: Updating (15) localization with delta_x=-0.000000	delta_y=-0.000000	delta_a=0.200468
+[INFO] [1792694415.609540433] [particle_filter]: Estimated pose: x=1.536268	y=-0.194320	a=1.539168
+[INFO] [1792694415.609609823] [particle_filter]: Groundtruth pose: x=1.623482	y=-0.143584	a=1.579562 
+
+[INFO] [1792694417.774741058] [particle_filter]: Updating (16) localization with delta_x=-0.000000	delta_y=-0.000000	delta_a=0.217115
+[INFO] [1792694417.801090350] [particle_filter]: Estimated pose: x=1.519715	y=-0.128297	a=1.779375
+[INFO] [1792694417.801147630] [particle_filter]: Groundtruth pose: x=1.658097	y=-0.139102	a=1.820867 
+
+[INFO] [1792694419.967021788] [particle_filter]: Updating (17) localization with delta_x=-0.000000	delta_y=-0.000000	delta_a=0.219423
+[INFO] [1792694419.994421375] [particle_filter]: Estimated pose: x=1.411718	y=-0.132116	a=2.054240
+[INFO] [1792694419.994473145] [particle_filter]: Groundtruth pose: x=1.692990	y=-0.125266	a=2.081379 
+
+[INFO] [1792694421.001348953] [particle_filter]: Updating (18) localization with delta_x=-0.000000	delta_y=-0.000000	delta_a=0.203229
+[INFO] [1792694421.031456922] [particle_filter]: Estimated pose: x=1.486064	y=-0.029717	a=2.270432
+[INFO] [1792694421.031520452] [particle_filter]: Groundtruth pose: x=1.720505	y=-0.105427	a=2.317485 
+
+[INFO] [1792694422.995794830] [particle_filter]: Updating (19) localization with delta_x=-0.000000	delta_y=-0.000000	delta_a=0.208468
+[INFO] [1792694423.023410977] [particle_filter]: Estimated pose: x=1.654160	y=0.054444	a=2.511973
+[INFO] [1792694423.023493858] [particle_filter]: Groundtruth pose: x=1.742807	y=-0.085071	a=2.526041 
+
+[INFO] [1792694425.088224189] [particle_filter]: Updating (20) localization with delta_x=-0.000000	delta_y=-0.000000	delta_a=0.220156
+[INFO] [1792694425.116603470] [particle_filter]: Estimated pose: x=1.744318	y=0.148745	a=2.715123
+[INFO] [1792694425.116659960] [particle_filter]: Groundtruth pose: x=1.758059	y=-0.061312	a=2.722189 
+
+[INFO] [1792694427.282118666] [particle_filter]: Updating (21) localization with delta_x=-0.000000	delta_y=-0.000000	delta_a=0.206131
+[INFO] [1792694427.309539582] [particle_filter]: Estimated pose: x=1.758971	y=-0.103921	a=2.893357
+[INFO] [1792694427.309591862] [particle_filter]: Groundtruth pose: x=1.766268	y=-0.037472	a=2.896855 
+
+[INFO] [1792694428.367009123] [particle_filter]: Updating (22) localization with delta_x=-0.000000	delta_y=-0.000000	delta_a=0.200642
+[INFO] [1792694428.393789727] [particle_filter]: Estimated pose: x=1.621110	y=-0.033079	a=3.088138
+[INFO] [1792694428.393843577] [particle_filter]: Groundtruth pose: x=1.770494	y=-0.008012	a=3.102471 
+
+[INFO] [1792694430.559700065] [particle_filter]: Updating (23) localization with delta_x=0.206203	delta_y=0.004388	delta_a=0.024361
+[INFO] [1792694430.586936320] [particle_filter]: Estimated pose: x=1.434873	y=0.032198	a=3.086397
+[INFO] [1792694430.587016691] [particle_filter]: Groundtruth pose: x=1.592195	y=-0.001515	a=3.134172 
+
+[INFO] [1792694431.745669189] [particle_filter]: Updating (24) localization with delta_x=0.202684	delta_y=0.000574	delta_a=0.007302
+[INFO] [1792694431.771635729] [particle_filter]: Estimated pose: x=1.258397	y=0.139563	a=-3.107344
+[INFO] [1792694431.771692739] [particle_filter]: Groundtruth pose: x=1.374702	y=0.000458	a=3.141087 
+
+[INFO] [1792694434.843278107] [particle_filter]: Updating (25) localization with delta_x=0.211201	delta_y=0.000490	delta_a=0.003089
+[INFO] [1792694434.870599193] [particle_filter]: Estimated pose: x=1.185702	y=0.122687	a=-3.100294
+[INFO] [1792694434.870683294] [particle_filter]: Groundtruth pose: x=1.169277	y=0.000471	a=-3.139567 
+
+[INFO] [1792694438.043931481] [particle_filter]: Updating (26) localization with delta_x=0.205113	delta_y=0.000151	delta_a=-0.000519
+[INFO] [1792694438.071086986] [particle_filter]: Estimated pose: x=0.923114	y=0.136616	a=-3.109385
+[INFO] [1792694438.071148196] [particle_filter]: Groundtruth pose: x=0.970955	y=-0.000174	a=-3.140038 
+
+[INFO] [1792694441.344557995] [particle_filter]: Updating (27) localization with delta_x=0.211078	delta_y=-0.000866	delta_a=-0.005520
+[INFO] [1792694441.370648615] [particle_filter]: Estimated pose: x=0.675159	y=0.135147	a=-3.132208
+[INFO] [1792694441.370708476] [particle_filter]: Groundtruth pose: x=0.765403	y=-0.000764	a=3.136050 
+
+[INFO] [1792694443.234034096] [particle_filter]: Updating (28) localization with delta_x=0.200325	delta_y=0.000797	delta_a=0.007570
+[INFO] [1792694443.262794009] [particle_filter]: Estimated pose: x=0.469503	y=0.153845	a=-3.139196
+[INFO] [1792694443.262850919] [particle_filter]: Groundtruth pose: x=0.549816	y=0.000789	a=-3.138319 
+
+[INFO] [1792694446.082662354] [particle_filter]: Updating (29) localization with delta_x=0.207030	delta_y=-0.000085	delta_a=-0.001020
+[INFO] [1792694446.108667434] [particle_filter]: Estimated pose: x=0.061734	y=0.017626	a=3.093380
+[INFO] [1792694446.108730554] [particle_filter]: Groundtruth pose: x=0.347043	y=0.000078	a=-3.140128 
+
+[INFO] [1792694449.079848707] [particle_filter]: Updating (30) localization with delta_x=0.210251	delta_y=-0.000145	delta_a=-0.002169
+[INFO] [1792694449.104110029] [particle_filter]: Estimated pose: x=-0.204417	y=-0.011015	a=-3.123534
+[INFO] [1792694449.104165899] [particle_filter]: Groundtruth pose: x=0.143138	y=-0.000404	a=3.140147 
+
+[INFO] [1792694452.634066771] [particle_filter]: Updating (31) localization with delta_x=0.107267	delta_y=-0.000133	delta_a=0.202917
+[INFO] [1792694452.659066436] [particle_filter]: Estimated pose: x=-0.087565	y=0.153734	a=-2.911275
+[INFO] [1792694452.659133217] [particle_filter]: Groundtruth pose: x=0.021089	y=0.030191	a=-2.932947 
+
+[INFO] [1792694454.623475793] [particle_filter]: Updating (32) localization with delta_x=-0.000000	delta_y=-0.000000	delta_a=0.207661
+[INFO] [1792694454.649565133] [particle_filter]: Estimated pose: x=-0.167733	y=-0.134638	a=-2.721102
+[INFO] [1792694454.649618953] [particle_filter]: Groundtruth pose: x=0.010995	y=0.061278	a=-2.706234 
+
+[INFO] [1792694456.767965840] [particle_filter]: Updating (33) localization with delta_x=-0.000000	delta_y=-0.000000	delta_a=0.215384
+[INFO] [1792694456.839444470] [particle_filter]: Estimated pose: x=-0.238872	y=0.077698	a=-2.492129
+[INFO] [1792694456.839532510] [particle_filter]: Groundtruth pose: x=-0.001805	y=0.088904	a=-2.496770 
+
+[INFO] [1792694459.005745908] [particle_filter]: Updating (34) localization with delta_x=-0.000000	delta_y=-0.000000	delta_a=0.207340
+[INFO] [1792694459.031116185] [particle_filter]: Estimated pose: x=-0.207857	y=-0.141556	a=-2.329512
+[INFO] [1792694459.031190225] [particle_filter]: Groundtruth pose: x=-0.018229	y=0.110111	a=-2.310686 
+
+[INFO] [1792694461.297126902] [particle_filter]: Updating (35) localization with delta_x=-0.000000	delta_y=-0.000000	delta_a=0.207465
+[INFO] [1792694461.320932862] [particle_filter]: Estimated pose: x=0.032587	y=0.002917	a=-2.110677
+[INFO] [1792694461.320999883] [particle_filter]: Groundtruth pose: x=-0.041201	y=0.128143	a=-2.108964 
+
+[INFO] [1792694462.177340065] [particle_filter]: Updating (36) localization with delta_x=-0.000000	delta_y=-0.000000	delta_a=0.211442
+[INFO] [1792694462.203420885] [particle_filter]: Estimated pose: x=-0.164132	y=0.028156	a=-1.989515
+[INFO] [1792694462.203488105] [particle_filter]: Groundtruth pose: x=-0.067375	y=0.140359	a=-1.908629 
+
+[INFO] [1792694464.318671007] [particle_filter]: Updating (37) localization with delta_x=-0.000000	delta_y=-0.000000	delta_a=0.211485
+[INFO] [1792694464.345095539] [particle_filter]: Estimated pose: x=0.008488	y=0.100446	a=-1.759356
+[INFO] [1792694464.345168649] [particle_filter]: Groundtruth pose: x=-0.092723	y=0.146741	a=-1.727705 
+
+[INFO] [1792694466.611315867] [particle_filter]: Updating (38) localization with delta_x=-0.000000	delta_y=-0.000000	delta_a=0.228124
+[INFO] [1792694466.637122446] [particle_filter]: Estimated pose: x=0.142633	y=0.205772	a=-1.548281
+[INFO] [1792694466.637194587] [particle_filter]: Groundtruth pose: x=-0.121025	y=0.148409	a=-1.531829 
+
+[INFO] [1792694468.903133754] [particle_filter]: Updating (39) localization with delta_x=-0.000000	delta_y=-0.000000	delta_a=0.209817
+[INFO] [1792694468.931092243] [particle_filter]: Estimated pose: x=0.211560	y=0.189613	a=-1.307594
+[INFO] [1792694468.931164083] [particle_filter]: Groundtruth pose: x=-0.151325	y=0.141059	a=-1.316688 
+
+[INFO] [1792694469.887942428] [particle_filter]: Updating (40) localization with delta_x=0.000000	delta_y=-0.000000	delta_a=0.204181
+[INFO] [1792694469.915622236] [particle_filter]: Estimated pose: x=-0.286001	y=0.023717	a=-1.063933
+[INFO] [1792694469.915675646] [particle_filter]: Groundtruth pose: x=-0.181873	y=0.127995	a=-1.087198 
+
+[INFO] [1792694471.879476619] [particle_filter]: Updating (41) localization with delta_x=-0.000000	delta_y=-0.000000	delta_a=0.200922
+[INFO] [1792694471.906302953] [particle_filter]: Estimated pose: x=-0.095353	y=0.077325	a=-0.871581
+[INFO] [1792694471.906385663] [particle_filter]: Groundtruth pose: x=-0.208263	y=0.110263	a=-0.865972 
+
+[INFO] [1792694473.970885970] [particle_filter]: Updating (42) localization with delta_x=-0.000000	delta_y=-0.000000	delta_a=0.217503
+[INFO] [1792694473.998119456] [particle_filter]: Estimated pose: x=-0.046492	y=-0.001648	a=-0.604630
+[INFO] [1792694473.998185956] [particle_filter]: Groundtruth pose: x=-0.231246	y=0.085542	a=-0.630896 
+
+[INFO] [1792694476.113007065] [particle_filter]: Updating (43) localization with delta_x=-0.000000	delta_y=-0.000000	delta_a=0.206506
+[INFO] [1792694476.139582418] [particle_filter]: Estimated pose: x=0.030624	y=0.097150	a=-0.405781
+[INFO] [1792694476.139658548] [particle_filter]: Groundtruth pose: x=-0.247057	y=0.057823	a=-0.408859 
+
+[INFO] [1792694478.304798700] [particle_filter]: Updating (44) localization with delta_x=-0.000000	delta_y=-0.000000	delta_a=0.223102
+[INFO] [1792694478.332006675] [particle_filter]: Estimated pose: x=0.110160	y=0.087414	a=-0.193508
+[INFO] [1792694478.332065176] [particle_filter]: Groundtruth pose: x=-0.257077	y=0.024398	a=-0.166875 
+
+[INFO] [1792694481.411346645] [rclcpp]: signal_handler(SIGINT/SIGTERM)
