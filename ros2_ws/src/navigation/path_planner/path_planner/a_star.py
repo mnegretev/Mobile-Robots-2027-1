@@ -7,6 +7,8 @@
 # occupancy grid and the A* algorithm
 # MODIFY ONLY THE SECTIONS MARKED WITH THE 'TODO' COMMENT
 #
+from os import path
+
 import rclpy
 from rclpy.node import Node
 from rclpy.time import Time, Duration
@@ -19,7 +21,7 @@ import numpy
 import heapq
 import math
 
-NAME = "FULL NAME"
+NAME = "PEREZ CORTES NATHAN"
 
 class AStarNode(Node):
     def a_star(self, start_r, start_c, goal_r, goal_c, grid_map, cost_map, use_diagonals):
@@ -62,7 +64,32 @@ class AStarNode(Node):
         #             mark r,c as 'in_open_list'
         #             add r,c to open list (check heapq.heappush)
         #
+        while len(open_list) > 0 and [row, col] != [goal_r, goal_c]:
+            _, [row, col] = heapq.heappop(open_list)
+            in_closed_list[row, col] = True
 
+            for [dr, dc, cost] in adjacents:
+                r = row + dr
+                c = col + dc
+
+                if r < 0 or r >= height or c < 0 or c >= width:
+                    continue
+                if grid_map[r, c] != 0 or in_closed_list[r, c]:
+                    continue
+
+                g = g_values[row, col] + cost + cost_map[r, c]
+
+                h = math.sqrt((goal_r - r) ** 2 + (goal_c - c) ** 2)
+                f = g + h
+
+                if g < g_values[r, c]:
+                    g_values[r, c] = g
+                    f_values[r, c] = f
+                    parent_nodes[r, c] = [row, col]
+
+                if not in_open_list[r, c]:
+                    in_open_list[r, c] = True
+                    heapq.heappush(open_list, (f, [r, c]))
         #
         # END OF WHILE
         #
@@ -127,6 +154,57 @@ class AStarNode(Node):
         self.msg_path = self.get_path_msg(path, res, zx, zy)
         resp.plan = self.msg_path
         return resp
+    
+    '''def callback_a_star(self, req, resp):
+        info = self.inflated_map.info
+        res = info.resolution
+        [sx, sy] = [req.start.pose.position.x, req.start.pose.position.y]
+        [gx, gy] = [req.goal .pose.position.x, req.goal .pose.position.y]
+        [zx, zy] = [self.inflated_map.info.origin.position.x, self.inflated_map.info.origin.position.y]
+        inflated_grid = numpy.reshape(numpy.asarray(self.inflated_map.data), (info.height, info.width))
+        cost_grid     = numpy.reshape(numpy.asarray(self.cost_map.data)    , (info.height, info.width))
+
+        start_r, start_c = int((sy-zy)/res), int((sx-zx)/res)
+        goal_r,  goal_c  = int((gy-zy)/res), int((gx-zx)/res)
+
+        self.get_logger().info("Planning path by A* from " + str([sx, sy])+" to "+str([gx, gy]))
+
+        times_diag_true = []
+        for i in range(10):
+            start_time = self.get_clock().now()
+            path = self.a_star(start_r, start_c, goal_r, goal_c, inflated_grid, cost_grid, True)
+            end_time = self.get_clock().now()
+            delta_ms = (end_time.nanoseconds - start_time.nanoseconds) / 1e6
+            times_diag_true.append(delta_ms)
+        avg_diag_true = sum(times_diag_true) / len(times_diag_true)
+
+        times_diag_false = []
+        for i in range(10):
+            start_time = self.get_clock().now()
+            path = self.a_star(start_r, start_c, goal_r, goal_c, inflated_grid, cost_grid, False)
+            end_time = self.get_clock().now()
+            delta_ms = (end_time.nanoseconds - start_time.nanoseconds) / 1e6
+            times_diag_false.append(delta_ms)
+        avg_diag_false = sum(times_diag_false) / len(times_diag_false)
+
+        self.get_logger().info(
+            f"Tiempo promedio (10 ejecuciones) con diagonales=True : {avg_diag_true:.3f} ms"
+        )
+        self.get_logger().info(
+            f"Tiempo promedio (10 ejecuciones) con diagonales=False: {avg_diag_false:.3f} ms"
+        )
+
+        use_diagonals = self.get_parameter('diagonals').get_parameter_value().bool_value
+        path = self.a_star(start_r, start_c, goal_r, goal_c, inflated_grid, cost_grid, use_diagonals)
+
+        if len(path) > 0:
+            self.get_logger().info("Path planned with " + str(len(path)) + " points")
+        else:
+            self.get_logger().info("Cannot plan path from  " + str([sx, sy])+" to "+str([gx, gy]) + " :'(")
+
+        self.msg_path = self.get_path_msg(path, res, zx, zy)
+        resp.plan = self.msg_path
+        return resp'''
 
     def callback_timer(self):
         self.pub_path.publish(self.msg_path)
