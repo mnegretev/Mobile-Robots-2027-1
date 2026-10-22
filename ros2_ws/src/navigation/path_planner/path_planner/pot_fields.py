@@ -24,7 +24,7 @@ import math
 import numpy
 import time
 
-NAME = "FULL NAME"
+NAME = "Perez Salazar Alfredo"
 
 SM_INIT = 0
 SM_WAIT_FOR_NEW_GOAL = 10
@@ -43,6 +43,10 @@ class PotFieldsNode(Node):
         # Set v and w same as simple_move:path_follower
         # Return v and w as a tuble [v,w]
         #
+        error_a = math.atan2(goal_y - 0, goal_x - 0) - 0
+        error_a = (error_a + math.pi)%(2*math.pi) - math.pi
+        v = v_max*math.exp(-error_a*error_a/alpha)
+        w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
         
         return [v,w]
     
@@ -55,6 +59,15 @@ class PotFieldsNode(Node):
         # where force_x and force_y are the X and Y components
         # of the resulting attraction force
         #
+        norm_q_g = numpy.hypot(-goal_x, -goal_y)
+
+        if norm_q_g > 0:
+            force_x = -eta * (-goal_x / norm_q_g)
+            force_y = -eta * (-goal_y / norm_q_g)
+        else:
+            force_x = 0.0
+            force_y = 0.0
+
         
         return numpy.asarray([force_x, force_y])
 
@@ -74,6 +87,16 @@ class PotFieldsNode(Node):
         # where force_x and force_y are the X and Y components
         # of the resulting rejection force
         #
+        for d, theta in laser_readings:
+            if d < d0 and d >0:
+                rho = zeta * math.sqrt((1.0/d)-(1.0/d0))
+            else:
+                rho = 0.0
+            force_x += rho * math.cos(theta)
+            force_y += rho * math.sin(theta)
+
+            force_x = force_x / N
+            force_y = force_y / N
         
         return numpy.asarray([force_x, force_y])
 
@@ -93,6 +116,33 @@ class PotFieldsNode(Node):
         #    Call the publish_speed_and_forces(...) function
         #    get goal point wrt robot
         #
+        goal_x, goal_y = self.get_goal_point_wrt_robot(global_goal_x, global_goal_y)
+        dist_to_goal = math.hypot(goal_x, goal_y)
+
+        # 2. Bucle de control mientras la distancia a la meta sea mayor a la tolerancia
+        while dist_to_goal > tol and rclpy.ok():
+            # a. Calcular fuerza atractiva
+            Fa = self.attraction_force(goal_x, goal_y, eta)
+
+            # b. Calcular fuerza repulsiva
+            Fr = self.rejection_force(self.laser_readings, zeta, d0)
+
+            # c. Calcular fuerza resultante (suma vectorial)
+            F = Fa + Fr
+
+            # d. Calcular la siguiente posición deseada por descenso de gradiente (P = -epsilon * F)
+            p_x = -epsilon * -F[0]
+            p_y = -epsilon * -F[1]
+
+            # e. Calcular las señales de control de velocidad (v, w)
+            v, w = self.calculate_control(p_x, p_y, alpha, beta)
+
+            # f. Publicar las velocidades e ilustrar las fuerzas mediante marcadores
+            self.publish_speed_and_forces(v, w, Fa, Fr, F)
+
+            # g. Actualizar la posición de la meta con respecto al robot y la distancia restante
+            goal_x, goal_y = self.get_goal_point_wrt_robot(global_goal_x, global_goal_y)
+            dist_to_goal = math.hypot(goal_x, goal_y)
         
         # END 
         #
