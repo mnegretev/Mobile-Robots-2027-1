@@ -15,7 +15,7 @@ import numpy
 import cv2
 import math
 
-FULL_NAME = "FULL NAME"
+FULL_NAME = "Enrique Medrano Solano"
 
 class HoughNode(Node):
     def callback_img(self, msg):
@@ -36,7 +36,32 @@ class HoughNode(Node):
         # Use the parameters self.canny_lower, self.canny_upper, self.rho, self.theta,
         # and self.hough_threshold
         #
-        
+        start_time = self.get_clock().now()
+        #Deteccipón de bordes
+        img_gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+        img_blur = cv2.GaussianBlur(img_gray, (5,5), 0)
+        edges = cv2.Canny(img_blur, self.canny_lower, self.canny_upper)
+
+        lines = cv2.HoughLines(edges, self.rho, self.theta, self.hough_threshold)
+        end_time = self.get_clock().now()
+        time_ms = (end_time - start_time).nanoseconds / 1e6
+
+        #Lineas resultantes
+        if lines is not None:
+            for line in lines:
+                rho_val, theta_val = line[0]
+                a = math.cos(theta_val)
+                b = math.sin(theta_val)
+                x0 = a * rho_val
+                y0 = b * rho_val
+
+                pt1 = (int(x0 + 1000*(-b)), int(y0 + 1000*(a)))
+                pt2 = (int(x0 - 1000*(-b)), int(y0 - 1000*(a)))
+                cv2.line(img_hough, pt1, pt2, (0,0,255), 2)
+
+        # Desplegar el tiempo en la imagen
+        cv2.putText(img_hough, f"Tiempo: {time_ms:.2f} ms", (10, 30), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
         
         cv2.imshow("BGR Original", img_bgr)
         cv2.imshow("Houhgh", img_hough)
@@ -46,7 +71,7 @@ class HoughNode(Node):
         print("INITIALIZING HOUGH NODE - ", FULL_NAME)
         super().__init__("hough_node")
         self.br = CvBridge()
-        self.sub_img = self.create_subscription(Image, '/camera/image_raw', self.callback_img, 1)
+        self.sub_img = self.create_subscription(Image, '/camera/color/image_raw', self.callback_img, 1)
         self.declare_parameter("canny_l",10)
         self.declare_parameter("canny_u",20)
         self.declare_parameter("rho", 10)
