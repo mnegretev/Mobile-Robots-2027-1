@@ -14,8 +14,9 @@ from cv_bridge import CvBridge
 import numpy
 import cv2
 import math
+from collections import deque
 
-FULL_NAME = "FULL NAME"
+FULL_NAME = "Luis Yehosua Orihuela Castillo"
 
 class HoughPNode(Node):
     def callback_img(self, msg):
@@ -36,7 +37,25 @@ class HoughPNode(Node):
         # Use the parameters self.canny_lower, self.canny_upper, self.rho, self.theta,
         # self.hough_threshold, self.min_length and self.max_gap
         #
-        
+        img_gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+        img_blur = cv2.GaussianBlur(img_gray, (15,15), 0)
+        img_bin = cv2.Canny(img_blur, self.canny_lower, self.canny_upper)
+        t_start = self.get_clock().now()
+        linesP = cv2.HoughLinesP(img_bin, self.rho, self.theta, self.hough_threshold, self.min_length, self.max_gap)
+        t_ms = (self.get_clock().now() - t_start).nanoseconds / 1e6
+        if self.contador_lecturas < 30:
+            self.suma_tiempos += t_ms
+            self.contador_lecturas += 1
+            texto = "ms: %.2f | Average: obteining data" % (t_ms)
+            if self.contador_lecturas == 30:
+                self.promedio_fijo = self.suma_tiempos / 30.0
+        else:
+            texto = "ms: %.2f | Average: %.2f ms" % (t_ms, self.promedio_fijo)
+        if linesP is not None:
+            for i in range(0, len(linesP)):
+                l = linesP[i][0]
+                cv2.line(img_houghP, (l[0], l[1]), (l[2], l[3]), (0,0,255), 3, cv2.LINE_AA)
+        cv2.putText(img_houghP, texto, (10,60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
         cv2.imshow("BGR Original", img_bgr)
         cv2.imshow("Houhgh P", img_houghP)
         cv2.waitKey(1)
@@ -45,7 +64,7 @@ class HoughPNode(Node):
         print("INITIALIZING PROBABILISTIC HOUGH NODE - ", FULL_NAME)
         super().__init__("houghP_node")
         self.br = CvBridge()
-        self.sub_img = self.create_subscription(Image, '/camera/image_raw', self.callback_img, 1)
+        self.sub_img = self.create_subscription(Image, '/camera/color/image_raw', self.callback_img, 1)
         self.declare_parameter("canny_l",10)
         self.declare_parameter("canny_u",20)
         self.declare_parameter("rho", 10)
@@ -64,6 +83,9 @@ class HoughPNode(Node):
         print("[Canny lower, Canny upper]=", [self.canny_lower, self.canny_upper])
         print("[rho, theta, Hough threshold]=", [self.rho, self.theta, self.hough_threshold])
         print("[min length, max gap]=",[self.min_length, self.max_gap])
+        self.contador_lecturas = 0
+        self.suma_tiempos = 0.0
+        self.promedio_fijo = 0.0
 
 def main(args=None):
     rclpy.init(args=args)
