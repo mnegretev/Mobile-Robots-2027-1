@@ -15,36 +15,71 @@ import numpy
 import cv2
 import math
 
-FULL_NAME = "FULL NAME"
+FULL_NAME = "Martinez Cruz LIzeth"
 
 class HoughPNode(Node):
     def callback_img(self, msg):
         img_bgr = self.br.imgmsg_to_cv2(msg, desired_encoding='bgr8')
         img_houghP = img_bgr.copy()
-        #
-        # TODO:
-        # Change the color space of the image 'img_bgr' to grayscale
-        # Get borders using the Canny edge detector.
-        # From boders, get lines using the cv2.HoughLinesP function
-        # Draw the resulting lines over the image img_houghP
-        # Check the online tutorials for OpenCV documentation
-        # https://docs.opencv.org/3.4/d9/db0/tutorial_hough_lines.html
-        # https://docs.opencv.org/4.x/d6/d6e/group__imgproc__draw.html
-        # Measure the time used to detect lines (only line detection)
-        # Check the use of node.get_clock().now() function.
-        # Display the processing time on the img_houghP image
-        # Use the parameters self.canny_lower, self.canny_upper, self.rho, self.theta,
-        # self.hough_threshold, self.min_length and self.max_gap
-        #
-        
+
+        # Preparar la imagen igual que en Hough.
+        img_gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+        img_blur = cv2.GaussianBlur(img_gray, (5, 5), 0)
+        img_edges = cv2.Canny(
+            img_blur, self.canny_lower, self.canny_upper
+        )
+
+        # Medir solamente la detección de segmentos.
+        start = self.get_clock().now()
+        lines = cv2.HoughLinesP(
+            img_edges,
+            self.rho,
+            self.theta,
+            self.hough_threshold,
+            minLineLength=self.min_length,
+            maxLineGap=self.max_gap
+        )
+        end = self.get_clock().now()
+        elapsed_ms = (end - start).nanoseconds / 1e6
+
+        # Dibujar cada segmento detectado en rojo.
+        if lines is not None:
+            for line in lines:
+                x1, y1, x2, y2 = line[0]
+                cv2.line(
+                    img_houghP,
+                    (int(x1), int(y1)),
+                    (int(x2), int(y2)),
+                    (0, 0, 255), 2
+                )
+
+        # Mostrar el tiempo de esta imagen.
+        cv2.putText(
+            img_houghP,
+            f"Tiempo HoughP: {elapsed_ms:.2f} ms",
+            (10, 30),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.6, (0, 255, 0), 2
+        )
+
+        # Calcular promedios de 30 imágenes.
+        self.hough_times.append(elapsed_ms)
+        if len(self.hough_times) == 30:
+            average_ms = sum(self.hough_times) / 30
+            self.get_logger().info(
+                f"Promedio HoughP de 30 imagenes: {average_ms:.3f} ms"
+            )
+            self.hough_times.clear()
+
         cv2.imshow("BGR Original", img_bgr)
-        cv2.imshow("Houhgh P", img_houghP)
+        cv2.imshow("Hough P", img_houghP)
         cv2.waitKey(1)
-    
+
     def __init__(self):
         print("INITIALIZING PROBABILISTIC HOUGH NODE - ", FULL_NAME)
         super().__init__("houghP_node")
         self.br = CvBridge()
+        self.hough_times = []
         self.sub_img = self.create_subscription(Image, '/camera/image_raw', self.callback_img, 1)
         self.declare_parameter("canny_l",10)
         self.declare_parameter("canny_u",20)

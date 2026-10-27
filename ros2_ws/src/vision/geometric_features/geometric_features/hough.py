@@ -15,37 +15,74 @@ import numpy
 import cv2
 import math
 
-FULL_NAME = "FULL NAME"
+FULL_NAME = "Martinez Cruz Lizeth"
 
 class HoughNode(Node):
     def callback_img(self, msg):
         img_bgr = self.br.imgmsg_to_cv2(msg, desired_encoding='bgr8')
-        img_hough  = img_bgr.copy()
-        #
-        # TODO:
-        # Change the color space of the image 'img_bgr' to grayscale
-        # Get borders using the Canny edge detector.
-        # From boders, get lines using the cv2.HoughLines function
-        # Draw the resulting lines over the image img_hough
-        # Check the online tutorials for OpenCV documentation
-        # https://docs.opencv.org/3.4/d9/db0/tutorial_hough_lines.html
-        # https://docs.opencv.org/4.x/d6/d6e/group__imgproc__draw.html
-        # Measure the time used to detect lines (only line detection)
-        # Check the use of node.get_clock().now() function.
-        # Display the processing time on the img_houghP image
-        # Use the parameters self.canny_lower, self.canny_upper, self.rho, self.theta,
-        # and self.hough_threshold
-        #
-        
-        
+        img_hough = img_bgr.copy()
+
+        # Convertir a gris y suavizar, igual que en Canny.
+        img_gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+        img_blur = cv2.GaussianBlur(img_gray, (5, 5), 0)
+        img_edges = cv2.Canny(
+            img_blur, self.canny_lower, self.canny_upper
+        )
+
+        # Medir solamente la detección de líneas.
+        start = self.get_clock().now()
+        lines = cv2.HoughLines(
+            img_edges, self.rho, self.theta, self.hough_threshold
+        )
+        end = self.get_clock().now()
+        elapsed_ms = (end - start).nanoseconds / 1e6
+
+        # Dibujar las líneas detectadas en rojo.
+        if lines is not None:
+            for line in lines:
+                rho, theta = line[0]
+                a = math.cos(theta)
+                b = math.sin(theta)
+                x0 = a * rho
+                y0 = b * rho
+
+                pt1 = (
+                    int(round(x0 - 1000 * b)),
+                    int(round(y0 + 1000 * a))
+                )
+                pt2 = (
+                    int(round(x0 + 1000 * b)),
+                    int(round(y0 - 1000 * a))
+                )
+                cv2.line(img_hough, pt1, pt2, (0, 0, 255), 2)
+
+        # Mostrar el tiempo de esta imagen.
+        cv2.putText(
+            img_hough,
+            f"Tiempo Hough: {elapsed_ms:.2f} ms",
+            (10, 30),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.6, (0, 255, 0), 2
+        )
+
+        # Obtener promedios de 30 imágenes para el reporte.
+        self.hough_times.append(elapsed_ms)
+        if len(self.hough_times) == 30:
+            average_ms = sum(self.hough_times) / 30
+            self.get_logger().info(
+                f"Promedio Hough de 30 imagenes: {average_ms:.3f} ms"
+            )
+            self.hough_times.clear()
+
         cv2.imshow("BGR Original", img_bgr)
-        cv2.imshow("Houhgh", img_hough)
+        cv2.imshow("Hough", img_hough)
         cv2.waitKey(1)
     
     def __init__(self):
         print("INITIALIZING HOUGH NODE - ", FULL_NAME)
         super().__init__("hough_node")
         self.br = CvBridge()
+        self.hough_times = []
         self.sub_img = self.create_subscription(Image, '/camera/image_raw', self.callback_img, 1)
         self.declare_parameter("canny_l",10)
         self.declare_parameter("canny_u",20)
