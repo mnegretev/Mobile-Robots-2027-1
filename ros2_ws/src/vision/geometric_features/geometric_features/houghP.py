@@ -15,7 +15,7 @@ import numpy
 import cv2
 import math
 
-FULL_NAME = "FULL NAME"
+FULL_NAME = "Romero Soto Raymundo"
 
 class HoughPNode(Node):
     def callback_img(self, msg):
@@ -36,7 +36,33 @@ class HoughPNode(Node):
         # Use the parameters self.canny_lower, self.canny_upper, self.rho, self.theta,
         # self.hough_threshold, self.min_length and self.max_gap
         #
+        # Convertir a escala de grises
+        img_gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+        img_blur = cv2.GaussianBlur(img_gray, (5, 5), 0)
+        # Obtener bordes con Canny
+        img_canny = cv2.Canny(img_gray, self.canny_lower, self.canny_upper)
         
+        # Iniciar medición de tiempo
+        start_time = self.get_clock().now()
+        
+        # Obtener segmentos de línea usando Transformada de Hough Probabilística
+        lines = cv2.HoughLinesP(img_canny, self.rho, self.theta, self.hough_threshold, 
+                                minLineLength=self.min_length, maxLineGap=self.max_gap)
+        
+        # Finalizar medición de tiempo
+        end_time = self.get_clock().now()
+        time_diff = end_time - start_time
+        processing_time_ms = time_diff.nanoseconds / 1e6 
+        
+        # Dibujar los segmentos de línea resultantes (HoughLinesP entrega [x1, y1, x2, y2])
+        if lines is not None:
+            for line in lines:
+                x1, y1, x2, y2 = line[0]
+                cv2.line(img_houghP, (x1, y1), (x2, y2), (0, 0, 255), 2, cv2.LINE_AA)
+                
+        # Mostrar el tiempo de procesamiento
+        time_text = f"Tiempo HoughP: {processing_time_ms:.2f} ms"
+        cv2.putText(img_houghP, time_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2, cv2.LINE_AA)
         cv2.imshow("BGR Original", img_bgr)
         cv2.imshow("Houhgh P", img_houghP)
         cv2.waitKey(1)

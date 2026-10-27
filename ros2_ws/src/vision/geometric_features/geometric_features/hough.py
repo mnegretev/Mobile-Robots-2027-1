@@ -15,7 +15,7 @@ import numpy
 import cv2
 import math
 
-FULL_NAME = "FULL NAME"
+FULL_NAME = "Romero Soto Raymundo"
 
 class HoughNode(Node):
     def callback_img(self, msg):
@@ -36,8 +36,28 @@ class HoughNode(Node):
         # Use the parameters self.canny_lower, self.canny_upper, self.rho, self.theta,
         # and self.hough_threshold
         #
-        
-        
+        img_gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY) #lo convierto de la escala de grises
+        img_canny = cv2.Canny(img_gray, self.canny_lower, self.canny_upper) #obtengo los bordes con canny
+        start_time = self.get_clock().now() #inicio el tiempo
+        lines = cv2.HoughLines(img_canny, self.rho, self.theta, self.hough_threshold) #obtengo las lineas con hough
+        end_time = self.get_clock().now() #termino el tiempo
+        time_diff = end_time - start_time #calculo la diferencia de tiempo
+        processing_time_ms = time_diff.nanoseconds / 1e6 #convierto el tiempo a segundos
+
+        if lines is not None:
+            for i in range(0, len(lines)):
+                rho = lines[i][0][0]
+                theta = lines[i][0][1]
+                a = math.cos(theta)
+                b = math.sin(theta)
+                x0 = a * rho
+                y0 = b * rho
+                pt1 = (int(x0 + 1000 * (-b)), int(y0 + 1000 * (a)))
+                pt2 = (int(x0 - 1000 * (-b)), int(y0 - 1000 * (a)))
+                cv2.line(img_hough, pt1, pt2, (0, 0, 255), 2, cv2.LINE_AA)
+        time_text = f"Tiempo Hough: {processing_time_ms:.2f} ms"
+        cv2.putText(img_hough, time_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2, cv2.LINE_AA)
+
         cv2.imshow("BGR Original", img_bgr)
         cv2.imshow("Houhgh", img_hough)
         cv2.waitKey(1)
