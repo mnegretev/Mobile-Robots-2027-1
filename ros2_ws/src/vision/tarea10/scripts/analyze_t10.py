@@ -5,7 +5,7 @@ Omar Rosario Carrasco.
 
 Analiza un lote de t10_runner.py y genera tablas, figuras y capturas para el reporte.
 
-Uso:  python3 analyze_t10.py ../datos/<lote> --out ../resultados [--warmup 5]
+Uso:  python3 analyze_t10.py ../datos/<lote> --out ../resultados [--warmup 5] [--md CARPETA]
 
 Por corrida se descartan los primeros --warmup cuadros (arranque del nodo) y, con el resto, se
 calculan media, desviacion estandar, mediana, p10, p90, p95, minimo y maximo del tiempo de deteccion.
@@ -15,7 +15,6 @@ Una corrida con p90/p10 > 2 se marca como perturbada; para comparar configuracio
 
 Salida (en --out):
   resumen_corridas.csv        estadisticas por corrida
-  tablas.md                   tablas de parametros y tiempos (Canny, Hough, Hough P)
   fig_canny_bordes.png        % de pixeles de borde vs umbrales y vs ancho del filtro
   fig_hough_parametros.png    tiempo y lineas vs umbral, angulos del acumulador y rho
   fig_houghP_parametros.png   tiempo y segmentos vs min_len, max_gap y umbral
@@ -27,6 +26,8 @@ Salida (en --out):
   capturas/<id>.png           original | resultado de cada corrida con sus parametros
   tiempo_vs_votos.csv, series_tiempo.csv   datos de las dos figuras de tiempo
   hallazgos.json              numeros clave para la discusion
+Con --md CARPETA tambien escribe tablas.md (tablas de parametros y tiempos) en esa carpeta, fuera
+del repositorio; sin --md no se escribe.
 Requiere NumPy y Matplotlib.
 """
 import argparse, csv, json, math, os
@@ -626,6 +627,7 @@ def main():
     ap.add_argument("lote", help="carpeta del lote (../datos/AAAAMMDD_HHMMSS)")
     ap.add_argument("--out", default=None, help="carpeta de resultados (default: ../resultados/<lote>)")
     ap.add_argument("--warmup", type=int, default=5, help="cuadros iniciales a descartar por corrida")
+    ap.add_argument("--md", default=None, help="carpeta donde escribir tablas.md (sin esta opcion no se escribe)")
     args = ap.parse_args()
     lote = os.path.abspath(args.lote)
     out = args.out or os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "resultados",
@@ -643,7 +645,9 @@ def main():
         pass
 
     write_summary(runs, out)
-    write_tables(runs, out, args.warmup)
+    if args.md:
+        os.makedirs(args.md, exist_ok=True)
+        write_tables(runs, args.md, args.warmup)
     fig_canny(B, out)
     th = lambda r: r["p"]["hough_th"]
     fig_params(B, out, "hough", [
