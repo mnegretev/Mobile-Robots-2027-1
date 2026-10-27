@@ -1,12 +1,3 @@
-#
-# MOBILE ROBOTS - FI-UNAM, 2026-1
-# PROBABILISTIC HOUGH LINE DETECTOR
-#
-# Instructions:
-# Complete the code necessary to implement the probabilistic Hough line
-# detector using the corresponding OpenCV function
-#
-
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
@@ -15,27 +6,33 @@ import numpy
 import cv2
 import math
 
-FULL_NAME = "FULL NAME"
+FULL_NAME = "Abraham Pérez Rojo"
 
 class HoughPNode(Node):
     def callback_img(self, msg):
         img_bgr = self.br.imgmsg_to_cv2(msg, desired_encoding='bgr8')
         img_houghP = img_bgr.copy()
-        #
-        # TODO:
-        # Change the color space of the image 'img_bgr' to grayscale
-        # Get borders using the Canny edge detector.
-        # From boders, get lines using the cv2.HoughLinesP function
-        # Draw the resulting lines over the image img_houghP
-        # Check the online tutorials for OpenCV documentation
-        # https://docs.opencv.org/3.4/d9/db0/tutorial_hough_lines.html
-        # https://docs.opencv.org/4.x/d6/d6e/group__imgproc__draw.html
-        # Measure the time used to detect lines (only line detection)
-        # Check the use of node.get_clock().now() function.
-        # Display the processing time on the img_houghP image
-        # Use the parameters self.canny_lower, self.canny_upper, self.rho, self.theta,
-        # self.hough_threshold, self.min_length and self.max_gap
-        #
+        
+        # Conversión a escala de grises y detección de bordes
+        img_gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+        img_bin = cv2.Canny(img_gray, self.canny_lower, self.canny_upper)
+        
+        # Medición de tiempo y Transformada de Hough Probabilística
+        start_time = self.get_clock().now()
+        linesP = cv2.HoughLinesP(img_bin, self.rho, self.theta, self.hough_threshold, None, self.min_length, self.max_gap)
+        end_time = self.get_clock().now()
+        
+        time_diff = end_time - start_time
+        time_ms = time_diff.nanoseconds / 1000000.0
+        
+        # Dibujo de líneas
+        if linesP is not None:
+            for i in range(0, len(linesP)):
+                l = linesP[i][0]
+                cv2.line(img_houghP, (l[0], l[1]), (l[2], l[3]), (0,0,255), 2, cv2.LINE_AA)
+                
+        # Mostrar el tiempo
+        cv2.putText(img_houghP, f"Time [ms]: {time_ms:.2f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
         
         cv2.imshow("BGR Original", img_bgr)
         cv2.imshow("Houhgh P", img_houghP)
@@ -45,7 +42,7 @@ class HoughPNode(Node):
         print("INITIALIZING PROBABILISTIC HOUGH NODE - ", FULL_NAME)
         super().__init__("houghP_node")
         self.br = CvBridge()
-        self.sub_img = self.create_subscription(Image, '/camera/image_raw', self.callback_img, 1)
+        self.sub_img = self.create_subscription(Image, '/camera/color/image_raw', self.callback_img, 1)
         self.declare_parameter("canny_l",10)
         self.declare_parameter("canny_u",20)
         self.declare_parameter("rho", 10)
