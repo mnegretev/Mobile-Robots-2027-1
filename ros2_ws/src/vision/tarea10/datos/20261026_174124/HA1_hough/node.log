@@ -1,0 +1,41 @@
+$ ros2 run geometric_features hough --ros-args -p canny_l:=50 -p canny_u:=150 -p rho:=1 -p theta:=0.0087 -p hough_th:=150 -p blur:=0 -p log_dir:=/mnt/Datos/Documents/Scholar/S2027_1/TemasSelectosMecatronica2/RepositoriosGIT/Mobile-Robots-2027-1/ros2_ws/src/vision/tarea10/datos/20261026_174124/HA1_hough -p n_frames:=100
+
+[INFO] [1793058233.091427729] [hough_node]: cuadro 30: t_avg=238.668 ms  t_std=31.683 ms (ultimos 20)  lines=509
+[INFO] [1793058249.120838275] [hough_node]: cuadro 60: t_avg=247.048 ms  t_std=35.075 ms (ultimos 20)  lines=509
+[INFO] [1793058254.927918629] [hough_node]: cuadro 90: t_avg=24.294 ms  t_std=4.353 ms (ultimos 20)  lines=516
+[INFO] [1793058255.956421405] [hough_node]: Experimento terminado: 100 cuadros en /mnt/Datos/Documents/Scholar/S2027_1/TemasSelectosMecatronica2/RepositoriosGIT/Mobile-Robots-2027-1/ros2_ws/src/vision/tarea10/datos/20261026_174124/HA1_hough
+INITIALIZING HOUGH NODE -  Omar Rosario Carrasco
+Starting line detection with parameters: 
+[Canny lower, Canny upper]= [50, 150]
+[rho, theta, Hough threshold]= [1, 0.0087, 150]
+[blur, n_avg]= [0, 20]
+Experiment mode: 100 frames -> /mnt/Datos/Documents/Scholar/S2027_1/TemasSelectosMecatronica2/RepositoriosGIT/Mobile-Robots-2027-1/ros2_ws/src/vision/tarea10/datos/20261026_174124/HA1_hough
+Traceback (most recent call last):
+  File "/home/omar/.cache/tarea10_ws/install/geometric_features/lib/geometric_features/hough", line 33, in <module>
+    sys.exit(load_entry_point('geometric-features', 'console_scripts', 'hough')())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/omar/.cache/tarea10_ws/build/geometric_features/geometric_features/hough.py", line 154, in main
+    rclpy.spin(hough_node)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/__init__.py", line 247, in spin
+    executor.spin_once()
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 926, in spin_once
+    self._spin_once_impl(timeout_sec)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 916, in _spin_once_impl
+    handler()
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/task.py", line 270, in __call__
+    self._execute_coroutine_step(self._handler)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/task.py", line 286, in _execute_coroutine_step
+    result = coro.send(None)
+             ^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 592, in handler
+    await call_coroutine()
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 480, in _execute
+    await await_or_execute(sub.callback, *msg_tuple)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 115, in await_or_execute
+    return callback(*args)
+           ^^^^^^^^^^^^^^^
+  File "/home/omar/.cache/tarea10_ws/build/geometric_features/geometric_features/hough.py", line 51, in callback_img
+    lines = cv2.HoughLines(img_edges, self.rho, self.theta, self.hough_threshold)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+[ros2run]: Interrupt

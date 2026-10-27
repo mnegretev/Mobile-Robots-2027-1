@@ -1,0 +1,5 @@
+# Imágenes pesadas: se quedan en disco y no se suben al repo
+datos/**/*.png
+resultados/**/capturas/
+resultados/**/mosaico_*.png
+__pycache__/

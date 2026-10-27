@@ -1,0 +1,30 @@
+{
+ "fecha": "2026-10-26T17:04:58",
+ "host": "omardeck",
+ "python": "3.12.3",
+ "kernel": "7.2.11-1-cachyos-deckify",
+ "ros_distro": "jazzy",
+ "nucleos": 8,
+ "frames_hough": 100,
+ "frames_canny": 20,
+ "opencv": "4.6.0",
+ "numpy": "1.26.4",
+ "cpu": "AMD Custom APU 0405",
+ "so": "Ubuntu 24.04.5 LTS",
+ "camara": {
+  "topico": "/camera/color/image_raw",
+  "ancho": 640,
+  "alto": 480,
+  "encoding": "rgb8",
+  "mensajes": 59,
+  "ambos_topicos": false
+ },
+ "fps": 7.812153252282964,
+ "rtf": 0.7791074032524747,
+ "detectores_abiertos": [],
+ "git": {
+  "commit": "7d388a7",
+  "rama": "rosario_carrasco",
+  "cambios_sin_commit": true
+ }
+}

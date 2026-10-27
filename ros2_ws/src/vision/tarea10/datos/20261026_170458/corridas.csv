@@ -1,0 +1,3 @@
+id,nodo,grupo,canny_l,canny_u,blur,rho,theta,hough_th,min_len,max_gap,use_sim_time,n_frames,estado,filas,inicio,duracion_s,carpeta
+C0,canny,practica,10,20,5,,,,,,,20,ok,20,2026-10-26T17:05:00,17.3,C0_canny
+C1,canny,umbrales,30,90,5,,,,,,,20,ok,20,2026-10-26T17:05:17,22.7,C1_canny

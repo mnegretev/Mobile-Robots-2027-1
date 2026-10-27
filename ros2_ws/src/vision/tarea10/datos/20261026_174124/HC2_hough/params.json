@@ -1,0 +1,11 @@
+{
+ "canny_l": 100,
+ "canny_u": 200,
+ "rho": 1,
+ "theta": 0.0175,
+ "hough_th": 150,
+ "blur": 0,
+ "n_avg": 20,
+ "n_frames": 100,
+ "use_sim_time": false
+}

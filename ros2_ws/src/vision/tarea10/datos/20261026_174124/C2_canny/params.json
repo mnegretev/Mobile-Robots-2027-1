@@ -1,0 +1,7 @@
+{
+ "canny_l": 50,
+ "canny_u": 150,
+ "blur": 5,
+ "n_frames": 20,
+ "use_sim_time": false
+}

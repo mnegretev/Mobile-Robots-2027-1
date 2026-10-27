@@ -16,6 +16,7 @@ import cv2
 import math
 
 FULL_NAME = "Omar Rosario Carrasco"
+import collections, json, os   # van después de FULL_NAME para que el nombre siga en la línea 18
 
 class HoughNode(Node):
     def callback_img(self, msg):
@@ -39,6 +40,9 @@ class HoughNode(Node):
         # Escala de grises y bordes con Canny: la imagen binaria de bordes es la
         # entrada de la Transformada Hough (solo votan los píxeles de borde)
         img_gray  = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+        if self.blur > 1:
+            # Filtro gaussiano opcional (como en clase con blur:=5). Por defecto no se usa.
+            img_gray = cv2.GaussianBlur(img_gray, (self.blur, self.blur), 0)
         img_edges = cv2.Canny(img_gray, self.canny_lower, self.canny_upper)
 
         # Solo se mide la detección de líneas: votación de cada píxel de borde en el
@@ -63,22 +67,44 @@ class HoughNode(Node):
                 p2 = (int(x0 + diag*b), int(y0 - diag*a))
                 cv2.line(img_hough, p1, p2, (0, 0, 255), 2, cv2.LINE_AA)
 
-        # Ubuntu no es de tiempo real: además del tiempo del cuadro se acumula el
-        # promedio de todos los cuadros (para la tabla de tiempos del reporte)
+        # Ubuntu no es de tiempo real, así que además del tiempo del cuadro se muestra un
+        # promedio móvil: self.times es un deque con maxlen=n_avg y solo conserva los
+        # últimos n_avg tiempos (al llegar uno nuevo se descarta el más viejo). Así el
+        # costo del promedio es fijo (n_avg sumas) y no crece con los cuadros procesados.
+        self.frame_count += 1
         self.times.append(t_ms)
-        t_avg = numpy.mean(self.times)
+        t_avg = sum(self.times) / len(self.times)
         cv2.putText(img_hough, "time[ms]=%.2f" % t_ms, (10, 30),
                     cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2)
-        cv2.putText(img_hough, "avg[ms]=%.2f  lines=%d" % (t_avg, n_lines), (10, 60),
+        cv2.putText(img_hough, "avg(%d)[ms]=%.2f  lines=%d" % (len(self.times), t_avg, n_lines), (10, 60),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-        if len(self.times) % 30 == 0:
-            self.get_logger().info("frames=%d  t_avg=%.3f ms  t_std=%.3f ms  lines=%d"
-                                   % (len(self.times), t_avg, numpy.std(self.times), n_lines))
+        if self.frame_count % 30 == 0:
+            self.get_logger().info("cuadro %d: t_avg=%.3f ms  t_std=%.3f ms (ultimos %d)  lines=%d"
+                                   % (self.frame_count, t_avg, numpy.std(self.times), len(self.times), n_lines))
+        if self.log_file is not None:
+            self.log_frame(t_ms, n_lines, img_edges, img_bgr, img_hough)
 
         cv2.imshow("BGR Original", img_bgr)
         cv2.imshow("Houhgh", img_hough)
         cv2.waitKey(1)
-    
+
+    def log_frame(self, t_ms, n_lines, img_edges, img_bgr, img_result):
+        # Modo experimento: una fila por cuadro; al llegar a n_frames guarda las imágenes,
+        # los parámetros usados y el archivo 'done' que espera el script de pruebas.
+        self.log_file.write("%d,%.4f,%d,%d\n" % (self.frame_count, t_ms, n_lines, cv2.countNonZero(img_edges)))
+        if self.frame_count < self.n_frames:
+            return
+        self.log_file.close()
+        self.log_file = None
+        cv2.imwrite(os.path.join(self.log_dir, "original.png"), img_bgr)
+        cv2.imwrite(os.path.join(self.log_dir, "bordes.png"), img_edges)
+        cv2.imwrite(os.path.join(self.log_dir, "resultado.png"), img_result)
+        names = ["canny_l", "canny_u", "rho", "theta", "hough_th", "blur", "n_avg", "n_frames", "use_sim_time"]
+        with open(os.path.join(self.log_dir, "params.json"), "w") as f:
+            json.dump({name: self.get_parameter(name).value for name in names}, f, indent=1)
+        open(os.path.join(self.log_dir, "done"), "w").close()
+        self.get_logger().info("Experimento terminado: %d cuadros en %s" % (self.n_frames, self.log_dir))
+
     def __init__(self):
         print("INITIALIZING HOUGH NODE - ", FULL_NAME)
         super().__init__("hough_node")
@@ -88,20 +114,39 @@ class HoughNode(Node):
         # /camera/color/image_raw (ver mbot_demo/config/gz_bridge.yaml), no en /camera/image_raw.
         # Se escuchan ambos tópicos para que el nodo reciba imágenes en cualquiera de los dos casos.
         self.sub_img_color = self.create_subscription(Image, '/camera/color/image_raw', self.callback_img, 1)
-        self.times = []    # Tiempos de detección [ms] de cada cuadro, para promediar
         self.declare_parameter("canny_l",10)
         self.declare_parameter("canny_u",20)
         self.declare_parameter("rho", 10)
         self.declare_parameter("theta", 0.1)
         self.declare_parameter("hough_th", 20)
+        self.declare_parameter("blur", 0)        # kernel del filtro gaussiano (impar); 0 = sin filtro
+        self.declare_parameter("n_avg", 20)      # cuadros del promedio móvil del tiempo
+        self.declare_parameter("log_dir", "")    # modo experimento: carpeta de salida ("" = desactivado)
+        self.declare_parameter("n_frames", 100)  # modo experimento: cuadros a registrar
         self.canny_lower = self.get_parameter("canny_l").get_parameter_value().integer_value
         self.canny_upper = self.get_parameter("canny_u").get_parameter_value().integer_value
         self.rho   = self.get_parameter("rho").get_parameter_value().integer_value
         self.theta = self.get_parameter("theta").get_parameter_value().double_value
         self.hough_threshold = self.get_parameter("hough_th").get_parameter_value().integer_value
+        self.blur = self.get_parameter("blur").get_parameter_value().integer_value
+        if self.blur > 1 and self.blur % 2 == 0:
+            self.blur += 1                       # GaussianBlur solo acepta kernels impares
+        self.n_avg = max(1, self.get_parameter("n_avg").get_parameter_value().integer_value)
+        self.times = collections.deque(maxlen=self.n_avg)   # últimos n_avg tiempos [ms]
+        self.frame_count = 0
+        self.log_dir  = self.get_parameter("log_dir").get_parameter_value().string_value
+        self.n_frames = self.get_parameter("n_frames").get_parameter_value().integer_value
+        self.log_file = None
+        if self.log_dir:
+            os.makedirs(self.log_dir, exist_ok=True)
+            self.log_file = open(os.path.join(self.log_dir, "frames.csv"), "w")
+            self.log_file.write("frame,t_ms,lines,edge_px\n")
         print("Starting line detection with parameters: ")
         print("[Canny lower, Canny upper]=", [self.canny_lower, self.canny_upper])
         print("[rho, theta, Hough threshold]=", [self.rho, self.theta, self.hough_threshold])
+        print("[blur, n_avg]=", [self.blur, self.n_avg])
+        if self.log_dir:
+            print("Experiment mode: %d frames -> %s" % (self.n_frames, self.log_dir))
 
 def main(args=None):
     rclpy.init(args=args)

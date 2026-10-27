@@ -1,0 +1,13 @@
+{
+ "canny_l": 50,
+ "canny_u": 150,
+ "rho": 1,
+ "theta": 0.0175,
+ "hough_th": 50,
+ "min_len": 30,
+ "max_gap": 5,
+ "blur": 0,
+ "n_avg": 20,
+ "n_frames": 100,
+ "use_sim_time": false
+}

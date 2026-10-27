@@ -1,0 +1,32 @@
+$ ros2 run geometric_features hough --ros-args -p canny_l:=50 -p canny_u:=150 -p rho:=1 -p theta:=0.0175 -p hough_th:=250 -p blur:=0 -p log_dir:=/mnt/Datos/Documents/Scholar/S2027_1/TemasSelectosMecatronica2/RepositoriosGIT/Mobile-Robots-2027-1/ros2_ws/src/vision/tarea10/datos/20261026_174124/HT3_hough -p n_frames:=100
+
+[INFO] [1793058210.065342085] [hough_node]: cuadro 30: t_avg=8.840 ms  t_std=0.264 ms (ultimos 20)  lines=1
+[INFO] [1793058213.035819167] [hough_node]: cuadro 60: t_avg=11.158 ms  t_std=0.793 ms (ultimos 20)  lines=1
+[INFO] [1793058216.035501618] [hough_node]: cuadro 90: t_avg=11.377 ms  t_std=1.201 ms (ultimos 20)  lines=1
+[INFO] [1793058217.065457412] [hough_node]: Experimento terminado: 100 cuadros en /mnt/Datos/Documents/Scholar/S2027_1/TemasSelectosMecatronica2/RepositoriosGIT/Mobile-Robots-2027-1/ros2_ws/src/vision/tarea10/datos/20261026_174124/HT3_hough
+INITIALIZING HOUGH NODE -  Omar Rosario Carrasco
+Starting line detection with parameters: 
+[Canny lower, Canny upper]= [50, 150]
+[rho, theta, Hough threshold]= [1, 0.0175, 250]
+[blur, n_avg]= [0, 20]
+Experiment mode: 100 frames -> /mnt/Datos/Documents/Scholar/S2027_1/TemasSelectosMecatronica2/RepositoriosGIT/Mobile-Robots-2027-1/ros2_ws/src/vision/tarea10/datos/20261026_174124/HT3_hough
+Traceback (most recent call last):
+  File "/home/omar/.cache/tarea10_ws/install/geometric_features/lib/geometric_features/hough", line 33, in <module>
+    sys.exit(load_entry_point('geometric-features', 'console_scripts', 'hough')())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/omar/.cache/tarea10_ws/build/geometric_features/geometric_features/hough.py", line 154, in main
+    rclpy.spin(hough_node)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/__init__.py", line 247, in spin
+    executor.spin_once()
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 926, in spin_once
+    self._spin_once_impl(timeout_sec)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 907, in _spin_once_impl
+    handler, entity, node = self.wait_for_ready_callbacks(
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 877, in wait_for_ready_callbacks
+    return next(self._cb_iter)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 781, in _wait_for_ready_callbacks
+    wait_set.wait(timeout_nsec)
+KeyboardInterrupt
+[ros2run]: Interrupt
