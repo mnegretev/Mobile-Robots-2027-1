@@ -7,6 +7,8 @@
 # detector using the corresponding OpenCV function
 #
 
+from matplotlib import lines
+
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
@@ -15,7 +17,7 @@ import numpy
 import cv2
 import math
 
-FULL_NAME = "FULL NAME"
+FULL_NAME = "Baños Reyes Renata"
 
 class HoughNode(Node):
     def callback_img(self, msg):
@@ -36,8 +38,50 @@ class HoughNode(Node):
         # Use the parameters self.canny_lower, self.canny_upper, self.rho, self.theta,
         # and self.hough_threshold
         #
+        img_gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+        img_bin = cv2.Canny(img_gray, self.canny_lower, self.canny_upper)
         
-        
+        start_time = self.get_clock().now()
+        lines = cv2.HoughLines(img_bin, self.rho, self.theta, self.hough_threshold)
+        end_time = self.get_clock().now()
+
+        processing_time = (end_time - start_time).nanoseconds / 1e6  #En milisegundos
+
+        if lines is not None:
+            for line in lines:
+                rho = line[0][0]
+                theta = line[0][1]
+
+                # Calcular puntos
+                a = math.cos(theta)
+                b = math.sin(theta)
+
+                x0 = a * rho
+                y0 = b * rho
+
+                pt1 = (int(x0 + 1000*(-b)), int(y0 + 1000*(a)))
+                pt2 = (int(x0 - 1000*(-b)), int(y0 - 1000*(a)))
+
+                # Dibujar línea
+                cv2.line(
+                    img_hough,
+                    pt1,
+                    pt2,
+                    (0, 0, 255),
+                    2
+                )
+
+        cv2.putText(
+                    img_hough,
+                    f"Line detection: {processing_time:.2f} ms",
+                    (10, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.7,
+                    (0, 255, 0),
+                    2
+                )
+
+        cv2.imshow("Canny Edges", img_bin)
         cv2.imshow("BGR Original", img_bgr)
         cv2.imshow("Houhgh", img_hough)
         cv2.waitKey(1)
@@ -46,7 +90,7 @@ class HoughNode(Node):
         print("INITIALIZING HOUGH NODE - ", FULL_NAME)
         super().__init__("hough_node")
         self.br = CvBridge()
-        self.sub_img = self.create_subscription(Image, '/camera/image_raw', self.callback_img, 1)
+        self.sub_img = self.create_subscription(Image, '/camera/color/image_raw', self.callback_img, 1)
         self.declare_parameter("canny_l",10)
         self.declare_parameter("canny_u",20)
         self.declare_parameter("rho", 10)
