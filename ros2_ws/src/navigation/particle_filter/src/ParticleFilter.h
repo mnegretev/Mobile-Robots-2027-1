@@ -7,7 +7,7 @@
  * Modify only the sections marked with the TODO comment. 
  */
 #include "particle_filter/ray_tracer.h"
-#define FULL_NAME "FULL NAME"
+#define FULL_NAME "Martinez Cruz Lizeth"
 
 class ParticleFilter
 {
@@ -25,7 +25,12 @@ public:
 	 * with positions uniformly distributed within bounding box given by min_x, ..., max_a.
 	 * To generate uniformly distributed random numbers, you can use the funcion rnd.uniformReal(min, max)
 	 */
-	
+	for (int i = 0; i < N; i++)
+{
+    particles[i].x = rnd.uniformReal(min_x, max_x);
+    particles[i].y = rnd.uniformReal(min_y, max_y);
+    particles[i].theta = rnd.uniformReal(min_a, max_a);
+}
 	/*
 	 */
 	return particles;
@@ -44,7 +49,23 @@ public:
 	 * Add gaussian noise to each new position. Use sigma2 as variance.
 	 * You can use the function rnd.gaussian(mean, variance)
 	 */
-	
+	for (auto& particle : particles)
+{
+    double angle = particle.theta;
+
+    double new_x = particle.x
+        + delta_x * cos(angle) - delta_y * sin(angle);
+
+    double new_y = particle.y
+        + delta_x * sin(angle) + delta_y * cos(angle);
+
+    particle.x = rnd.gaussian(new_x, sigma2);
+    particle.y = rnd.gaussian(new_y, sigma2);
+    particle.theta = rnd.gaussian(angle + delta_t, sigma2);
+
+    particle.theta = atan2(sin(particle.theta),
+                           cos(particle.theta));
+}
     }
 
     static std::vector<sensor_msgs::msg::LaserScan> simulate_particle_scans(
@@ -90,7 +111,54 @@ public:
 	 * IMPORTANT NOTE 2. Both, simulated an real scans, can have infinite distances. Thus, when comparing readings,
 	 * ensure both simulated and real ranges are finite values. 
 	 */
-	
+	double total = 0.0;
+
+for (size_t i = 0; i < simulated_scans.size(); i++)
+{
+    double difference_sum = 0.0;
+    size_t valid_readings = 0;
+
+    for (size_t j = 0; j < simulated_scans[i].ranges.size(); j++)
+    {
+        size_t real_index = j * downsampling;
+
+        if (real_index >= real_scan.ranges.size())
+            break;
+
+        double simulated = simulated_scans[i].ranges[j];
+        double real = real_scan.ranges[real_index];
+
+        if (std::isfinite(simulated) && std::isfinite(real))
+        {
+            difference_sum += std::abs(real - simulated);
+            valid_readings++;
+        }
+    }
+
+    if (valid_readings > 0)
+    {
+        double delta = difference_sum / valid_readings;
+        similarities[i] = std::exp(-delta / sigma2);
+    }
+    else
+    {
+        similarities[i] = 0.0;
+    }
+
+    total += similarities[i];
+}
+
+// Normalizar para que las probabilidades sumen 1.
+if (total > 0.0)
+{
+    for (auto& similarity : similarities)
+        similarity /= total;
+}
+else if (!similarities.empty())
+{
+    for (auto& similarity : similarities)
+        similarity = 1.0 / similarities.size();
+}
 	
 	return similarities;
     }
@@ -105,9 +173,23 @@ public:
 	 * Probability of picking an integer 'i' is given by the corresponding probabilities[i] value.
 	 * Return the chosen integer. 
 	 */
+	if (probabilities.empty())
+    return -1;
+
+double sample = rnd.uniformReal(0.0, 1.0);
+double accumulated = 0.0;
+
+for (size_t i = 0; i < probabilities.size(); i++)
+{
+    accumulated += probabilities[i];
+
+    if (sample < accumulated)
+        return static_cast<int>(i);
+}
+
+return static_cast<int>(probabilities.size() - 1);
 	
 	
-	return -1;
     }
 
     static std::vector<geometry_msgs::msg::Pose2D> resample_particles(
@@ -123,7 +205,25 @@ public:
 	 * Use the random_choice function to pick a particle with the correct probability.
 	 * Add gaussian noise to each sampled particle (add noise to x,y and theta). Use sigma2 as noise variance.
 	 */
-	
+	for (size_t i = 0; i < particles.size(); i++)
+{
+    int index = random_choice(probabilities);
+
+    if (index < 0)
+        return particles;
+
+    resampled_particles[i].x =
+        rnd.gaussian(particles[index].x, sigma2);
+
+    resampled_particles[i].y =
+        rnd.gaussian(particles[index].y, sigma2);
+
+    double angle =
+        rnd.gaussian(particles[index].theta, sigma2);
+
+    resampled_particles[i].theta =
+        atan2(sin(angle), cos(angle));
+}
 	/*
 	 */
 	return resampled_particles;
