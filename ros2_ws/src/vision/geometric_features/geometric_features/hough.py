@@ -15,7 +15,7 @@ import numpy
 import cv2
 import math
 
-FULL_NAME = "FULL NAME"
+FULL_NAME = "Leonardo Santos Vicente"
 
 class HoughNode(Node):
     def callback_img(self, msg):
@@ -35,18 +35,48 @@ class HoughNode(Node):
         # Display the processing time on the img_houghP image
         # Use the parameters self.canny_lower, self.canny_upper, self.rho, self.theta,
         # and self.hough_threshold
-        #
-        
+        # 1. Convertir a escala de grises y aplicar difuminado (para el ruido)
+        img_gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+        blurred = cv2.GaussianBlur(img_gray, (9, 9), 0)
+        # 2. Iniciar el reloj de ROS 2 para medir el tiempo de detección
+        start_time = self.get_clock().now().nanoseconds
+        # 3. Detectar bordes con Canny
+        edges = cv2.Canny(blurred, self.canny_lower, self.canny_upper)
+        # 4. Detectar líneas con Transformada de Hough Clásica
+        lines = cv2.HoughLines(edges, self.rho, self.theta, self.hough_threshold)
+        # 5. Detener el reloj y calcular el tiempo en milisegundos (1 ms = 1,000,000 ns)
+        end_time = self.get_clock().now().nanoseconds
+        elapsed_time_ms = (end_time - start_time) / 1000000.0
+        # 6. Dibujar las líneas detectadas sobre img_hough
+        if lines is not None:
+            for line in lines:
+                rho_line, theta_line = line[0]
+                a = numpy.cos(theta_line)
+                b = numpy.sin(theta_line)
+                x0 = a * rho_line
+                y0 = b * rho_line
+                
+                # Extender la línea para dibujarla cruzando la pantalla
+                x1 = int(x0 + 1000 * (-b))
+                y1 = int(y0 + 1000 * (a))
+                x2 = int(x0 - 1000 * (-b))
+                y2 = int(y0 - 1000 * (a))
+                
+                # Dibujar línea roja (BGR: 0, 0, 255)
+                cv2.line(img_hough, (x1, y1), (x2, y2), (0, 0, 255), 2)       
+        # 7. Mostrar el tiempo de procesamiento en la imagen
+        cv2.putText(img_hough, f"Tiempo: {elapsed_time_ms:.2f} ms", (10, 30), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
         
         cv2.imshow("BGR Original", img_bgr)
-        cv2.imshow("Houhgh", img_hough)
+        cv2.imshow("Hough", img_hough)
         cv2.waitKey(1)
     
     def __init__(self):
         print("INITIALIZING HOUGH NODE - ", FULL_NAME)
         super().__init__("hough_node")
         self.br = CvBridge()
-        self.sub_img = self.create_subscription(Image, '/camera/image_raw', self.callback_img, 1)
+        self.sub_img = self.create_subscription(Image, '/camera/color/image_raw', self.callback_img, 1)
         self.declare_parameter("canny_l",10)
         self.declare_parameter("canny_u",20)
         self.declare_parameter("rho", 10)

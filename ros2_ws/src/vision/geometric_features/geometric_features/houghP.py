@@ -15,7 +15,7 @@ import numpy
 import cv2
 import math
 
-FULL_NAME = "FULL NAME"
+FULL_NAME = "Leonardo Santos Vicente"
 
 class HoughPNode(Node):
     def callback_img(self, msg):
@@ -36,7 +36,28 @@ class HoughPNode(Node):
         # Use the parameters self.canny_lower, self.canny_upper, self.rho, self.theta,
         # self.hough_threshold, self.min_length and self.max_gap
         #
-        
+        # 1. Convertir a escala de grises y aplicar difuminado
+        img_gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+        blurred = cv2.GaussianBlur(img_gray, (9, 9), 0)
+        # 2. Iniciar el reloj de ROS 2
+        start_time = self.get_clock().now().nanoseconds
+        # 3. Detectar bordes con Canny
+        edges = cv2.Canny(blurred, self.canny_lower, self.canny_upper)
+        # 4. Detectar líneas con Transformada de Hough Probabilística
+        lines = cv2.HoughLinesP(edges, self.rho, self.theta, self.hough_threshold, 
+                                minLineLength=self.min_length, maxLineGap=self.max_gap)
+        # 5. Detener el reloj y calcular el tiempo en milisegundos
+        end_time = self.get_clock().now().nanoseconds
+        elapsed_time_ms = (end_time - start_time) / 1000000.0
+        # 6. Dibujar las líneas detectadas (son segmentos directos)
+        if lines is not None:
+            for line in lines:
+                x1, y1, x2, y2 = line[0]
+                # Dibujar línea azul (BGR: 255, 0, 0)
+                cv2.line(img_houghP, (x1, y1), (x2, y2), (255, 0, 0), 2)        
+        # 7. Mostrar el tiempo de procesamiento en la imagen
+        cv2.putText(img_houghP, f"Tiempo: {elapsed_time_ms:.2f} ms", (10, 30), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
         cv2.imshow("BGR Original", img_bgr)
         cv2.imshow("Houhgh P", img_houghP)
         cv2.waitKey(1)
@@ -45,7 +66,7 @@ class HoughPNode(Node):
         print("INITIALIZING PROBABILISTIC HOUGH NODE - ", FULL_NAME)
         super().__init__("houghP_node")
         self.br = CvBridge()
-        self.sub_img = self.create_subscription(Image, '/camera/image_raw', self.callback_img, 1)
+        self.sub_img = self.create_subscription(Image, '/camera/color/image_raw', self.callback_img, 1)
         self.declare_parameter("canny_l",10)
         self.declare_parameter("canny_u",20)
         self.declare_parameter("rho", 10)

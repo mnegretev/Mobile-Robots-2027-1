@@ -25,7 +25,12 @@ public:
 	 * with positions uniformly distributed within bounding box given by min_x, ..., max_a.
 	 * To generate uniformly distributed random numbers, you can use the funcion rnd.uniformReal(min, max)
 	 */
-	
+	// Generación de N partículas con distribución uniforme
+    for(int i = 0; i < N; i++) {
+        particles[i].x = rnd.uniformReal(min_x, max_x);
+        particles[i].y = rnd.uniformReal(min_y, max_y);
+        particles[i].theta = rnd.uniformReal(min_a, max_a);
+    }
 	/*
 	 */
 	return particles;
@@ -44,7 +49,19 @@ public:
 	 * Add gaussian noise to each new position. Use sigma2 as variance.
 	 * You can use the function rnd.gaussian(mean, variance)
 	 */
-	
+		for(size_t i = 0; i < particles.size(); i++) {
+            float nx = rnd.gaussian(0.0, sigma2);
+            float ny = rnd.gaussian(0.0, sigma2);
+            float nt = rnd.gaussian(0.0, sigma2);
+            
+            float x_new = particles[i].x + delta_x * cos(particles[i].theta) - delta_y * sin(particles[i].theta) + nx;
+            float y_new = particles[i].y + delta_x * sin(particles[i].theta) + delta_y * cos(particles[i].theta) + ny;
+            float t_new = particles[i].theta + delta_t + nt;
+            
+            particles[i].x = x_new;
+            particles[i].y = y_new;
+            particles[i].theta = t_new;
+        }
     }
 
     static std::vector<sensor_msgs::msg::LaserScan> simulate_particle_scans(
@@ -90,7 +107,34 @@ public:
 	 * IMPORTANT NOTE 2. Both, simulated an real scans, can have infinite distances. Thus, when comparing readings,
 	 * ensure both simulated and real ranges are finite values. 
 	 */
-	
+	double sum_similarities = 0.0;
+        
+        // Cálculo de similitud manejando downsampling y valores finitos
+        for(size_t i = 0; i < simulated_scans.size(); i++) {
+            double delta_sum = 0.0;
+            int valid_readings = 0;
+            
+            for(size_t j = 0; j < simulated_scans[i].ranges.size(); j++) {
+                float sim_r = simulated_scans[i].ranges[j];
+                float real_r = real_scan.ranges[j * downsampling];
+                
+                if(std::isfinite(sim_r) && std::isfinite(real_r)) {
+                    delta_sum += std::abs(real_r - sim_r);
+                    valid_readings++;
+                }
+            }
+            
+            double delta = (valid_readings > 0) ? (delta_sum / valid_readings) : 0.0;
+            similarities[i] = exp(-delta / sigma2);
+            sum_similarities += similarities[i];
+        }
+        
+        // Normalización para crear distribución de probabilidad discreta
+        if (sum_similarities > 0.0) {
+            for(size_t i = 0; i < similarities.size(); i++) {
+                similarities[i] /= sum_similarities;
+            }
+        }
 	
 	return similarities;
     }
@@ -105,9 +149,17 @@ public:
 	 * Probability of picking an integer 'i' is given by the corresponding probabilities[i] value.
 	 * Return the chosen integer. 
 	 */
-	
-	
-	return -1;
+	// Selección aleatoria basada en probabilidad discreta
+        double r = rnd.uniformReal(0.0, 1.0);
+        double cumulative = 0.0;
+        
+        for(size_t i = 0; i < probabilities.size(); i++) {
+            cumulative += probabilities[i];
+            if(r <= cumulative) {
+                return i;
+            }
+        }
+        return probabilities.size() - 1;
     }
 
     static std::vector<geometry_msgs::msg::Pose2D> resample_particles(
@@ -123,7 +175,17 @@ public:
 	 * Use the random_choice function to pick a particle with the correct probability.
 	 * Add gaussian noise to each sampled particle (add noise to x,y and theta). Use sigma2 as noise variance.
 	 */
-	
+    // Remuestreo con reemplazo y adición de ruido Gaussiano
+        for(size_t i = 0; i < particles.size(); i++) {
+            int idx = random_choice(probabilities);
+            geometry_msgs::msg::Pose2D p = particles[idx];
+            
+            p.x += rnd.gaussian(0.0, sigma2);
+            p.y += rnd.gaussian(0.0, sigma2);
+            p.theta += rnd.gaussian(0.0, sigma2);
+            
+            resampled_particles[i] = p;
+        }
 	/*
 	 */
 	return resampled_particles;
