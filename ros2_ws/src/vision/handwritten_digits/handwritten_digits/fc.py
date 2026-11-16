@@ -11,8 +11,9 @@ import sys
 import random
 import numpy
 import os
+import time
 
-NAME = "FULL NAME"
+NAME = "Luis Yehosua Orihuela Castillo | Enrique Medrano Solano"
 
 class FCNeuralNetwork(object):
     def __init__(self, layers, weights=None, biases=None):
@@ -41,7 +42,11 @@ class FCNeuralNetwork(object):
         #   x = 1.0 / (1.0 + exp(-u)) The output of the i-th layer is the input of the next one
         #   append x to y
         #
-        
+        y.append(x)
+        for i in range(0,len(self.weights)):
+            u= numpy.dot(self.weights[i], x) + self.biases[i]
+            x = 1.0/(1.0 + numpy.exp(-u))
+            y.append(x)
         return y
 
     def backpropagate(self, x, t):
@@ -65,6 +70,13 @@ class FCNeuralNetwork(object):
         #     nabla_b[-i] = delta
         #     nabla_w[-i] = delta*y[-i-1].T  
         #
+        delta = (y[-1] - t) * y[-1]* (1 - y[-1])
+        nabla_w[-1] = delta*y[-2].T
+        nabla_b[-1] = delta
+        for i in range (2, len(self.biases)+1):
+            delta = numpy.dot(self.weights[-i+1].T,delta)*y[-i]*(1-y[-i])
+            nabla_w[-i] = delta*y[-i-1].T
+            nabla_b[-i] = delta 
         
         return nabla_w, nabla_b
 
@@ -115,8 +127,8 @@ def load_dataset(folder):
               [0,0,0,1,0,0,0,0,0,0], [0,0,0,0,1,0,0,0,0,0], [0,0,0,0,0,1,0,0,0,0],
               [0,0,0,0,0,0,1,0,0,0], [0,0,0,0,0,0,0,1,0,0], [0,0,0,0,0,0,0,0,1,0],
               [0,0,0,0,0,0,0,0,0,1]]
-    # labels = [[0,0,0,0], [0,0,0,1], [0,0,1,0], [0,0,1,1], [0,1,0,0],
-    #           [0,1,0,1], [0,1,1,0], [0,1,1,1], [1,0,0,0], [1,0,0,1]]
+    #labels = [[0,0,0,0], [0,0,0,1], [0,0,1,0], [0,0,1,1], [0,1,0,0],
+    #          [0,1,0,1], [0,1,1,0], [0,1,1,1], [1,0,0,0], [1,0,0,1]]
     for i in range(10):
         f_data = [c/255.0 for c in open(os.path.join(folder, "data" + str(i)), "rb").read(784000)]
         images = [numpy.asarray(f_data[784*j:784*(j+1)]).reshape([784,1]) for j in range(1000)]
@@ -131,29 +143,70 @@ def load_dataset(folder):
 def main(args=None):
     print("TRAINING A NEURAL NETWORK - " + NAME)
     dataset_folder = os.path.join("../dataset")
-    
-    epochs        = 3
-    batch_size    = 50
-    learning_rate = 1.0
     training_x, training_t, testing_x, testing_t = load_dataset(dataset_folder)
-    nn = FCNeuralNetwork([784,30,10])
-    # nn = FCNeuralNetwork([784,30,4])
-    nn.train_by_SGD(training_x, training_t, epochs, batch_size, learning_rate)
+    learning_rates = [0.5, 1.0, 3.0, 10.0]
+    epochs_list    = [3, 10, 50, 100]
+    batch_sizes    = [5, 10, 30, 100]
+    num_tests      = 100
 
-    print("\nPress key to test network or ESC to exit...")
-    numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
-    cmd = cv2.waitKey(0)
-    while cmd != 27:
-        rand_i = numpy.random.randint(0, len(testing_x))
-        img,label = testing_x[rand_i], testing_t[rand_i]
-        y = nn.feedforward(img)[-1]
-        print("\nNN output: " + str(y.T))
-        print("Expected output  : "   + str(label.T))
-        print("Correctly classified: "   + str(numpy.linalg.norm(label - y) < 0.5))
-        cv2.imshow("Digit", numpy.reshape(numpy.asarray(img, dtype="float32"), (28,28,1)))
-        cmd = cv2.waitKey(0)
+    total_runs = len(learning_rates) * len(epochs_list) * len(batch_sizes)
+    current_run = 0
+
+    filename = f"resultados_[784, 30, 10].txt"
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write("Learning_Rate | Epocas | Batch_Size | Tiempo_Entrenamiento(s) | Porcentaje_Exito(%)\n")
+        f.write("-" * 80 + "\n")
+
+        for lr in learning_rates:
+            for ep in epochs_list:
+                for bs in batch_sizes:
+                    current_run += 1
+                    print(f"\n[{current_run}/{total_runs}] Probando -> LR: {lr}, Epocas: {ep}, Batch: {bs}")
+
+                    # Arquitectura
+                    nn = FCNeuralNetwork([784,30,10])
+                    #nn = FCNeuralNetwork([784,30,4])
+
+                    # Tiempo
+                    start_time = time.perf_counter()
+                    nn.train_by_SGD(training_x, training_t, ep, bs, lr)
+                    training_time = time.perf_counter() - start_time
+
+                    # 100 pruebas
+                    aciertos = 0
+                    for _ in range(num_tests):
+                        rand_i = numpy.random.randint(0, len(testing_x))
+                        img, label = testing_x[rand_i], testing_t[rand_i]
+                        y = nn.feedforward(img)[-1]
+                        if numpy.linalg.norm(label - y) < 0.5:
+                            aciertos += 1
+
+                    porcentaje_exito = (aciertos / num_tests) * 100.0
+
+                    # 4. Mostrar y guardar resultados en el archivo
+                    linea = f"{lr:<13} | {ep:<6} | {bs:<10} | {training_time:<23.4f} | {porcentaje_exito:.2f}%\n"
+                    print(f"--> Tiempo: {training_time:.4f} s | Éxito: {porcentaje_exito:.2f}%")
+                    f.write(linea)
+                    f.flush()
+
+    print(f"\nResultados guardados en '{filename}'.")
+
+    # nn = FCNeuralNetwork([784,30,10])
+    # #nn = FCNeuralNetwork([784,30,4])
+    # nn.train_by_SGD(training_x, training_t, epochs, batch_size, learning_rate)
+
+    # print("\nPress key to test network or ESC to exit...")
+    # numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
+    # cmd = cv2.waitKey(0)
+    # while cmd != 27:
+    #     rand_i = numpy.random.randint(0, len(testing_x))
+    #     img,label = testing_x[rand_i], testing_t[rand_i]
+    #     y = nn.feedforward(img)[-1]
+    #     print("\nNN output: " + str(y.T))
+    #     print("Expected output  : "   + str(label.T))
+    #     print("Correctly classified: "   + str(numpy.linalg.norm(label - y) < 0.5))
+    #     cv2.imshow("Digit", numpy.reshape(numpy.asarray(img, dtype="float32"), (28,28,1)))
+    #     cmd = cv2.waitKey(0)
     
-
-
 if __name__ == '__main__':
     main()
