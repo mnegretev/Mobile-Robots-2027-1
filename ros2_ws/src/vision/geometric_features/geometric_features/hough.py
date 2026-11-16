@@ -15,7 +15,7 @@ import numpy
 import cv2
 import math
 
-FULL_NAME = "FULL NAME"
+FULL_NAME = "PEREZ CORTES NATHAN"
 
 class HoughNode(Node):
     def callback_img(self, msg):
@@ -36,8 +36,32 @@ class HoughNode(Node):
         # Use the parameters self.canny_lower, self.canny_upper, self.rho, self.theta,
         # and self.hough_threshold
         #
-        
-        
+        img_gris = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+        img_blur = cv2.blur(img_gris, (3, 3))
+        img_bordes = cv2.Canny(img_blur, self.canny_lower, self.canny_upper)
+
+        # Detección de líneas (solo esto se mide en el tiempo)
+        t_inicio = self.get_clock().now()
+        lineas = cv2.HoughLines(img_bordes, self.rho, self.theta, self.hough_threshold)
+        t_fin = self.get_clock().now()
+        tiempo_ms = (t_fin - t_inicio).nanoseconds / 1e6
+
+        # Dibujar las líneas sobre img_hough
+        if lineas is not None:
+            for linea in lineas:
+                rho, theta = linea[0]
+                a = numpy.cos(theta)
+                b = numpy.sin(theta)
+                x0 = a * rho
+                y0 = b * rho
+                pt1 = (int(x0 + 1000 * (-b)), int(y0 + 1000 * a))
+                pt2 = (int(x0 - 1000 * (-b)), int(y0 - 1000 * a))
+                cv2.line(img_hough, pt1, pt2, (0, 0, 255), 2)
+
+        # Mostrar el tiempo de procesamiento en la imagen
+        cv2.putText(img_hough, "Tiempo: {:.2f} ms".format(tiempo_ms), (10, 30),
+            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+    
         cv2.imshow("BGR Original", img_bgr)
         cv2.imshow("Houhgh", img_hough)
         cv2.waitKey(1)
@@ -46,7 +70,7 @@ class HoughNode(Node):
         print("INITIALIZING HOUGH NODE - ", FULL_NAME)
         super().__init__("hough_node")
         self.br = CvBridge()
-        self.sub_img = self.create_subscription(Image, '/camera/image_raw', self.callback_img, 1)
+        self.sub_img = self.create_subscription(Image, '/camera/color/image_raw', self.callback_img, 1)
         self.declare_parameter("canny_l",10)
         self.declare_parameter("canny_u",20)
         self.declare_parameter("rho", 10)

@@ -90,7 +90,7 @@ void mouse_move(GLFWwindow* window, double xpos, double ypos) {
 
   // move camera
   //mjv_moveCamera(m, action, dx/height, dy/height, &scn, &cam);
-  mjv_moveCamera(m, action, dx/height, dy/height, &cam);
+  mjv_moveCamera(m, action, dx/height, dy/height, &scn, &cam);
 }
 
 
@@ -98,7 +98,7 @@ void mouse_move(GLFWwindow* window, double xpos, double ypos) {
 void scroll(GLFWwindow* window, double xoffset, double yoffset) {
   // emulate vertical mouse motion = 5% of window height
   //mjv_moveCamera(m, mjMOUSE_ZOOM, 0, -0.05*yoffset, &scn, &cam);
-  mjv_moveCamera(m, mjMOUSE_ZOOM, 0, -0.05*yoffset, &cam);
+  mjv_moveCamera(m, mjMOUSE_ZOOM, 0, -0.05*yoffset, &scn, &cam);
 }
 
 

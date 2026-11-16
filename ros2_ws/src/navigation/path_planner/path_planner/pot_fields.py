@@ -24,7 +24,7 @@ import math
 import numpy
 import time
 
-NAME = "FULL NAME"
+NAME = "PEREZ CORTES NATHAN"
 
 SM_WAIT_FOR_TF = 0
 SM_READY = 10
@@ -34,29 +34,20 @@ SM_GOAL_REACHED = 50
 
 class PotFieldsNode(Node):
     def calculate_control(self, goal_x, goal_y, alpha, beta):
-        v,w = 0,0
         v_max = 0.5
         w_max = 0.8
-        #
-        # TODO:
-        # Implement the control law given by:
-        # v = v_max*math.exp(-error_a*error_a/alpha)
-        # w = w_max*(2/(1 + math.exp(-error_a/beta)) - 1)
-        # Set v and w same as simple_move:path_follower
-        # Return v and w as a tuble [v,w]
-        #      
+        error_a = math.atan2(goal_y, goal_x)
+        v = v_max * math.exp(-error_a * error_a / alpha)
+        w = w_max * (2.0 / (1.0 + math.exp(-error_a / beta)) - 1.0)     
         
         return [v,w]
     
     def attraction_force(self, goal_x, goal_y, eta):
         force_x, force_y = 0,0
-        #
-        # TODO:
-        # Calculate the attraction force, given the robot and goal positions.
-        # Return a tuple of the form [force_x, force_y]
-        # where force_x and force_y are the X and Y components
-        # of the resulting attraction force
-        #
+        q_g = numpy.asarray([goal_x, goal_y])
+        norm = numpy.linalg.norm(q_g)
+        if norm > 0:
+            force_x, force_y = -eta * q_g / norm
         
         return numpy.asarray([force_x, force_y])
 
@@ -65,17 +56,15 @@ class PotFieldsNode(Node):
         if N == 0:
             return [0, 0]
         force_x, force_y = 0, 0
-        #
-        # TODO:
-        # Calculate the total rejection force given by the average
-        # of the rejection forces caused by each laser reading.
-        # laser_readings is an array where each element is a tuple [distance, angle]
-        # both measured w.r.t. robot's frame.
-        # See lecture notes for equations to calculate rejection forces.
-        # Return a tuple of the form [force_x, force_y]
-        # where force_x and force_y are the X and Y components
-        # of the resulting rejection force
-        #
+        for d, theta in laser_readings:
+            if 0 < d < d0:
+                rho = zeta * math.sqrt(1.0/d - 1.0/d0)
+            else:
+                rho = 0
+            force_x += rho * math.cos(theta)
+            force_y += rho * math.sin(theta)
+        force_x /= N
+        force_y /= N
         
         return numpy.asarray([force_x, force_y])
     
