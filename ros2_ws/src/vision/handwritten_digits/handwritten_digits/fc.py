@@ -11,8 +11,8 @@ import sys
 import random
 import numpy
 import os
-
-NAME = "FULL NAME"
+import time
+NAME = "Romero Soto Raymundo"
 
 class FCNeuralNetwork(object):
     def __init__(self, layers, weights=None, biases=None):
@@ -41,6 +41,12 @@ class FCNeuralNetwork(object):
         #   x = 1.0 / (1.0 + exp(-u)) The output of the i-th layer is the input of the next one
         #   append x to y
         #
+        y = []
+        y.append(x)
+        for w, b in zip(self.weights, self.biases):
+            u = numpy.dot(w, x) + b
+            x = 1.0 / (1.0 + numpy.exp(-u))
+            y.append(x)
         
         return y
 
@@ -65,7 +71,14 @@ class FCNeuralNetwork(object):
         #     nabla_b[-i] = delta
         #     nabla_w[-i] = delta*y[-i-1].T  
         #
+        delta = (y[-1] - t) * y[-1] * (1.0 - y[-1])
+        nabla_b[-1] = delta
+        nabla_w[-1] = numpy.dot(delta, y[-2].T)
         
+        for i in range(2, len(self.weights) + 1):
+            delta = numpy.dot(self.weights[-i + 1].T, delta) * y[-i] * (1.0 - y[-i])
+            nabla_b[-i] = delta
+            nabla_w[-i] = numpy.dot(delta, y[-i - 1].T)
         return nabla_w, nabla_b
 
     def update_with_batch(self, batch, eta):
@@ -111,17 +124,17 @@ class FCNeuralNetwork(object):
 def load_dataset(folder):
     print("Loading data set from " + folder)
     training_x, training_t, testing_x, testing_t = [],[],[],[]
-    labels = [[1,0,0,0,0,0,0,0,0,0], [0,1,0,0,0,0,0,0,0,0], [0,0,1,0,0,0,0,0,0,0],
-              [0,0,0,1,0,0,0,0,0,0], [0,0,0,0,1,0,0,0,0,0], [0,0,0,0,0,1,0,0,0,0],
-              [0,0,0,0,0,0,1,0,0,0], [0,0,0,0,0,0,0,1,0,0], [0,0,0,0,0,0,0,0,1,0],
-              [0,0,0,0,0,0,0,0,0,1]]
-    # labels = [[0,0,0,0], [0,0,0,1], [0,0,1,0], [0,0,1,1], [0,1,0,0],
-    #           [0,1,0,1], [0,1,1,0], [0,1,1,1], [1,0,0,0], [1,0,0,1]]
+   # labels = [[1,0,0,0,0,0,0,0,0,0], [0,1,0,0,0,0,0,0,0,0], [0,0,1,0,0,0,0,0,0,0],
+    #          [0,0,0,1,0,0,0,0,0,0], [0,0,0,0,1,0,0,0,0,0], [0,0,0,0,0,1,0,0,0,0],
+     #         [0,0,0,0,0,0,1,0,0,0], [0,0,0,0,0,0,0,1,0,0], [0,0,0,0,0,0,0,0,1,0],
+      #        [0,0,0,0,0,0,0,0,0,1]]
+    labels = [[0,0,0,0], [0,0,0,1], [0,0,1,0], [0,0,1,1], [0,1,0,0],
+               [0,1,0,1], [0,1,1,0], [0,1,1,1], [1,0,0,0], [1,0,0,1]]
     for i in range(10):
         f_data = [c/255.0 for c in open(os.path.join(folder, "data" + str(i)), "rb").read(784000)]
         images = [numpy.asarray(f_data[784*j:784*(j+1)]).reshape([784,1]) for j in range(1000)]
-        label  = numpy.asarray(labels[i]).reshape([10,1])
-        # label  = numpy.asarray(labels[i]).reshape([4,1])
+        #label  = numpy.asarray(labels[i]).reshape([10,1])
+        label  = numpy.asarray(labels[i]).reshape([4,1])
         training_x += images[0:len(images)//2]
         training_t += [label for j in range(len(images)//2)]
         testing_x  += images[len(images)//2:len(images)]
@@ -131,16 +144,45 @@ def load_dataset(folder):
 def main(args=None):
     print("TRAINING A NEURAL NETWORK - " + NAME)
     dataset_folder = os.path.join("../dataset")
-    
-    epochs        = 3
-    batch_size    = 50
+#estos se modifican
+    epochs        = 10
+    batch_size    = 30
     learning_rate = 1.0
+    arquitectura  = [784,60,4]
     training_x, training_t, testing_x, testing_t = load_dataset(dataset_folder)
-    nn = FCNeuralNetwork([784,30,10])
-    # nn = FCNeuralNetwork([784,30,4])
-    nn.train_by_SGD(training_x, training_t, epochs, batch_size, learning_rate)
+    nn = FCNeuralNetwork(arquitectura)
 
-    print("\nPress key to test network or ESC to exit...")
+    
+    print(f"\n[Configuración] Épocas: {epochs} | Lote: {batch_size} | Eta: {learning_rate} | Red: {arquitectura}")
+    
+    # 1. Medir el tiempo de entrenamiento
+    start_time = time.time()
+    nn.train_by_SGD(training_x, training_t, epochs, batch_size, learning_rate)
+    end_time = time.time()
+    
+    tiempo_entrenamiento = end_time - start_time
+
+    # 2. Realizar 100 pruebas de clasificación automáticas
+    aciertos = 0
+    num_pruebas = 100
+    
+    for _ in range(num_pruebas):
+        rand_i = numpy.random.randint(0, len(testing_x))
+        img, label = testing_x[rand_i], testing_t[rand_i]
+        y = nn.feedforward(img)[-1]
+        
+        # Se cuenta como éxito si la norma del error es menor a 0.5
+        if numpy.linalg.norm(label - y) < 0.5:
+            aciertos += 1
+
+    porcentaje_exito = (aciertos / num_pruebas) * 100.0
+
+    print("\n\n RESULTADOS ")
+    print(f"Tiempo de entrenamiento : {tiempo_entrenamiento:.4f} segundos")
+    print(f"Porcentaje de éxitos    : {porcentaje_exito:.1f}% ({aciertos}/{num_pruebas})")
+    print("----------------------------------\n")
+
+    '''#print("\nPress key to test network or ESC to exit...")
     numpy.set_printoptions(formatter={'float_kind':"{:.3f}".format})
     cmd = cv2.waitKey(0)
     while cmd != 27:
@@ -152,7 +194,7 @@ def main(args=None):
         print("Correctly classified: "   + str(numpy.linalg.norm(label - y) < 0.5))
         cv2.imshow("Digit", numpy.reshape(numpy.asarray(img, dtype="float32"), (28,28,1)))
         cmd = cv2.waitKey(0)
-    
+    '''
 
 
 if __name__ == '__main__':
