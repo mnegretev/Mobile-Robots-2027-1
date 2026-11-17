@@ -1,0 +1,132 @@
+=== Etiquetas one-hot, red 784-30-10: 64 combinaciones ===
+Aciertos en prueba (%), criterio ||t - y|| < 0.5. Renglones: tasa, lote. Columnas: epocas [3, 10, 50, 100]
+  eta= 0.5 lote=  5 |  51.8   74.8   82.2   82.9
+  eta= 0.5 lote= 10 |  34.0   67.2   80.7   81.6
+  eta= 0.5 lote= 30 |  13.6   35.9   74.2   78.9
+  eta= 0.5 lote=100 |   9.3   13.5   46.3   67.5
+  eta= 1.0 lote=  5 |  69.1   79.9   83.1   83.2
+  eta= 1.0 lote= 10 |  52.0   75.0   82.3   82.9
+  eta= 1.0 lote= 30 |  24.4   57.3   79.0   81.0
+  eta= 1.0 lote=100 |   9.8   24.8   67.4   76.0
+  eta= 3.0 lote=  5 |  79.2   84.7   85.2   85.2
+  eta= 3.0 lote= 10 |  74.1   81.2   83.3   83.5
+  eta= 3.0 lote= 30 |  49.7   75.0   82.1   82.4
+  eta= 3.0 lote=100 |  20.9   52.4   78.5   81.1
+  eta=10.0 lote=  5 |  75.9   82.0   82.3   86.5
+  eta=10.0 lote= 10 |  67.1   84.6   87.0   87.1
+  eta=10.0 lote= 30 |  73.1   82.3   85.0   84.6
+  eta=10.0 lote=100 |  43.5   68.6   82.1   82.7
+Mejor: eta=10 epocas=100 lote=10 -> 87.12 % (digito 91.22 %, entrenamiento 98.28 %) en 63.6 s
+Peor: eta=0.5 epocas=3 lote=100 -> 9.28 % (digito 10.02 %, entrenamiento 9.18 %) en 1.4 s
+Tiempo de entrenamiento por numero de epocas (mediana [min, max], s):
+    3 epocas:   1.57 [  1.36,   1.73]
+   10 epocas:   4.99 [  4.62,   5.89]
+   50 epocas:  25.83 [ 23.86,  34.92]
+  100 epocas:  51.03 [ 48.33,  63.63]
+Segundos por epoca segun el lote (mediana [min, max]):
+  lote   5: 0.567 [0.537, 0.698]
+  lote  10: 0.522 [0.502, 0.636]
+  lote  30: 0.497 [0.472, 0.569]
+  lote 100: 0.483 [0.452, 0.550]
+Segundos por epoca segun la tasa de aprendizaje (mediana):  0.5: 0.503  1: 0.505  3: 0.511  10: 0.540
+100 pruebas menos 5000 pruebas (puntos): media +3.84, desviacion 2.33, maximo absoluto 10.9
+
+=== Etiquetas binario, red 784-30-4: 64 combinaciones ===
+Aciertos en prueba (%), criterio ||t - y|| < 0.5. Renglones: tasa, lote. Columnas: epocas [3, 10, 50, 100]
+  eta= 0.5 lote=  5 |  53.2   72.5   79.7   79.7
+  eta= 0.5 lote= 10 |  45.2   64.0   77.4   79.3
+  eta= 0.5 lote= 30 |  30.3   42.4   70.7   76.0
+  eta= 0.5 lote=100 |  13.8   29.8   51.1   64.0
+  eta= 1.0 lote=  5 |  66.7   77.7   80.4   80.8
+  eta= 1.0 lote= 10 |  51.6   72.7   79.4   79.8
+  eta= 1.0 lote= 30 |  39.8   56.9   75.6   77.9
+  eta= 1.0 lote=100 |  23.3   37.8   64.2   72.7
+  eta= 3.0 lote=  5 |  76.8   85.0   85.6   85.2
+  eta= 3.0 lote= 10 |  69.6   80.5   81.9   82.2
+  eta= 3.0 lote= 30 |  50.8   72.9   79.6   80.4
+  eta= 3.0 lote=100 |  38.5   54.1   75.3   77.9
+  eta=10.0 lote=  5 |  63.3   78.9   83.4   83.2
+  eta=10.0 lote= 10 |  78.5   82.7   86.5   86.7
+  eta=10.0 lote= 30 |  69.7   80.3   81.6   81.7
+  eta=10.0 lote=100 |  52.0   72.4   79.7   80.2
+Mejor: eta=10 epocas=100 lote=10 -> 86.68 % (digito 86.76 %, entrenamiento 98.70 %) en 52.8 s
+Peor: eta=0.5 epocas=3 lote=100 -> 13.80 % (digito 17.50 %, entrenamiento 14.70 %) en 1.4 s
+Tiempo de entrenamiento por numero de epocas (mediana [min, max], s):
+    3 epocas:   1.52 [  1.34,   1.81]
+   10 epocas:   5.10 [  4.20,   5.82]
+   50 epocas:  25.32 [ 22.92,  35.70]
+  100 epocas:  51.53 [ 47.08,  59.72]
+Segundos por epoca segun el lote (mediana [min, max]):
+  lote   5: 0.563 [0.496, 0.714]
+  lote  10: 0.520 [0.498, 0.588]
+  lote  30: 0.495 [0.453, 0.597]
+  lote 100: 0.478 [0.420, 0.530]
+Segundos por epoca segun la tasa de aprendizaje (mediana):  0.5: 0.512  1: 0.518  3: 0.507  10: 0.503
+100 pruebas menos 5000 pruebas (puntos): media +6.60, desviacion 2.91, maximo absoluto 13.5
+
+=== Etiquetas one-hot, red 784-30-20-10: 64 combinaciones ===
+Aciertos en prueba (%), criterio ||t - y|| < 0.5. Renglones: tasa, lote. Columnas: epocas [3, 10, 50, 100]
+  eta= 0.5 lote=  5 |  43.1   77.3   84.7   85.0
+  eta= 0.5 lote= 10 |  22.8   59.6   82.7   84.0
+  eta= 0.5 lote= 30 |   3.8   25.3   74.9   80.9
+  eta= 0.5 lote=100 |   0.1    3.2   38.8   59.8
+  eta= 1.0 lote=  5 |  68.7   82.4   85.6   85.5
+  eta= 1.0 lote= 10 |  43.1   77.3   84.7   85.2
+  eta= 1.0 lote= 30 |  12.5   47.2   80.9   83.3
+  eta= 1.0 lote=100 |   1.5    9.9   60.2   77.1
+  eta= 3.0 lote=  5 |  79.0   85.0   88.3   88.5
+  eta= 3.0 lote= 10 |  75.4   83.8   85.8   85.8
+  eta= 3.0 lote= 30 |  43.9   77.8   84.6   85.4
+  eta= 3.0 lote=100 |  10.4   43.8   80.6   83.2
+  eta=10.0 lote=  5 |  63.9   74.4   78.1   77.4
+  eta=10.0 lote= 10 |  79.9   83.1   88.0   88.2
+  eta=10.0 lote= 30 |  75.6   85.0   87.1   87.7
+  eta=10.0 lote=100 |  47.2   76.4   84.2   85.1
+Mejor: eta=3 epocas=100 lote=5 -> 88.52 % (digito 90.62 %, entrenamiento 99.08 %) en 68.6 s
+Peor: eta=0.5 epocas=3 lote=100 -> 0.10 % (digito 18.44 %, entrenamiento 0.12 %) en 1.8 s
+Tiempo de entrenamiento por numero de epocas (mediana [min, max], s):
+    3 epocas:   1.87 [  1.57,   2.44]
+   10 epocas:   6.24 [  5.11,   7.88]
+   50 epocas:  32.07 [ 29.07,  36.70]
+  100 epocas:  64.76 [ 52.00,  76.00]
+Segundos por epoca segun el lote (mediana [min, max]):
+  lote   5: 0.704 [0.622, 0.814]
+  lote  10: 0.653 [0.554, 0.707]
+  lote  30: 0.620 [0.521, 0.663]
+  lote 100: 0.586 [0.511, 0.641]
+Segundos por epoca segun la tasa de aprendizaje (mediana):  0.5: 0.647  1: 0.654  3: 0.640  10: 0.578
+100 pruebas menos 5000 pruebas (puntos): media -3.18, desviacion 4.21, maximo absoluto 15.2
+
+=== Etiquetas binario, red 784-30-20-4: 64 combinaciones ===
+Aciertos en prueba (%), criterio ||t - y|| < 0.5. Renglones: tasa, lote. Columnas: epocas [3, 10, 50, 100]
+  eta= 0.5 lote=  5 |  59.1   75.2   81.2   81.7
+  eta= 0.5 lote= 10 |  43.6   67.8   79.8   81.0
+  eta= 0.5 lote= 30 |  17.0   44.7   73.8   78.6
+  eta= 0.5 lote=100 |   3.6   15.6   55.5   68.3
+  eta= 1.0 lote=  5 |  70.3   80.4   83.9   84.2
+  eta= 1.0 lote= 10 |  59.0   76.0   81.9   81.5
+  eta= 1.0 lote= 30 |  33.2   59.8   78.7   80.2
+  eta= 1.0 lote=100 |   8.9   31.6   68.5   75.3
+  eta= 3.0 lote=  5 |  78.5   85.1   87.9   88.2
+  eta= 3.0 lote= 10 |  74.9   82.9   84.9   84.4
+  eta= 3.0 lote= 30 |  58.5   75.6   81.6   81.6
+  eta= 3.0 lote=100 |  31.4   58.0   78.3   80.2
+  eta=10.0 lote=  5 |  63.8   66.0   77.6   80.1
+  eta=10.0 lote= 10 |  81.3   84.8   85.2   87.7
+  eta=10.0 lote= 30 |  73.9   82.8   85.8   85.7
+  eta=10.0 lote=100 |  57.5   75.8   81.5   82.1
+Mejor: eta=3 epocas=100 lote=5 -> 88.20 % (digito 88.34 %, entrenamiento 99.14 %) en 70.3 s
+Peor: eta=0.5 epocas=3 lote=100 -> 3.58 % (digito 22.86 %, entrenamiento 4.00 %) en 1.8 s
+Tiempo de entrenamiento por numero de epocas (mediana [min, max], s):
+    3 epocas:   1.81 [  1.56,   2.19]
+   10 epocas:   6.69 [  6.11,   8.12]
+   50 epocas:  31.95 [ 26.68,  39.06]
+  100 epocas:  62.67 [ 52.73,  74.70]
+Segundos por epoca segun el lote (mediana [min, max]):
+  lote   5: 0.707 [0.603, 0.812]
+  lote  10: 0.669 [0.560, 0.728]
+  lote  30: 0.617 [0.527, 0.669]
+  lote 100: 0.604 [0.519, 0.668]
+Segundos por epoca segun la tasa de aprendizaje (mediana):  0.5: 0.656  1: 0.633  3: 0.612  10: 0.629
+100 pruebas menos 5000 pruebas (puntos): media -1.46, desviacion 2.34, maximo absoluto 6.5
+
