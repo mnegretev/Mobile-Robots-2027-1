@@ -12,7 +12,7 @@ import random
 import numpy
 import os
 
-NAME = "FULL NAME"
+NAME = "Marco Ruben Guerrero Nieva"
 
 class FCNeuralNetwork(object):
     def __init__(self, layers, weights=None, biases=None):
@@ -29,18 +29,15 @@ class FCNeuralNetwork(object):
     def feedforward(self, x):
         y = []
         #
-        # TODO:
-        # Calculate the output of each layer given the input x
-        # Return an array y containg the output of each layer.
-        # Remember that input x is considered as the layer zero
-        # You can do the following steps:
-        # 
-        # append x to y
-        # FOR i = [0,..,L-1):
-        #   u = dot product (W[i], x) + B[i]
-        #   x = 1.0 / (1.0 + exp(-u)) The output of the i-th layer is the input of the next one
-        #   append x to y
+        # Output of every layer for the input x.
+        # y[0]   = x            (layer 0, the input itself)
+        # y[i+1] = sigmoid(W[i] @ y[i] + B[i])
         #
+        y.append(x)
+        for w, b in zip(self.weights, self.biases):
+            u = numpy.dot(w, y[-1]) + b          # pre-activation: z = W a + b
+            a = 1.0 / (1.0 + numpy.exp(-u))      # sigmoid: a = 1/(1+exp(-z))
+            y.append(a)
         
         return y
 
@@ -48,23 +45,24 @@ class FCNeuralNetwork(object):
         y = self.feedforward(x)
         nabla_b = [numpy.zeros(b.shape) for b in self.biases]
         nabla_w = [numpy.zeros(w.shape) for w in self.weights]
-        # TODO:
-        # Return a tuple [nabla_w, nabla_b] containing the gradient of cost function J with respect to
-        # each weight and bias of all the network. The gradient is calculated assuming only one training
-        # example: the input 'x' and the corresponding target 't'.
-        # nabla_w and nabla_b should have the same dimensions as the corresponding
-        # self.weights and self.biases
-        # You can calculate the gradient following these steps:
         #
-        # Calculate delta for the output layer L: delta=(y[-1]-t)*y[-1]*(1-y[-1])
-        # nabla_b of output layer = delta      
-        # nabla_w of output layer = delta*y[-2].T where y[-2].T is the transpose of the ouput vector of layer L-1
-        # FOR all layers i=[2,L): 
-        #     delta = (W[-i+1].T * delta)*y[-i]*(1 - y[-i])
-        #     where 'W[-i+1].T' is the transpose of the matrix of weights of layer -i+1 and 'y[-i]' is the output of layer -i
-        #     nabla_b[-i] = delta
-        #     nabla_w[-i] = delta*y[-i-1].T  
+        # Gradients of J = (1/2) * ||y[-1] - t||^2 for a single example (x, t).
         #
+        # Output layer L: delta_L = (a_L - t) * a_L * (1 - a_L)
+        # (the derivative of the cost with respect to z_L; the factor (1/2)
+        # cancels the 2 of the quadratic cost).
+        #
+        delta = (y[-1] - t) * y[-1] * (1.0 - y[-1])
+        nabla_b[-1] = delta
+        nabla_w[-1] = numpy.dot(delta, y[-2].T)
+        #
+        # Hidden layers, backwards: delta_l = (W_{l+1}^T delta_{l+1}) * a_l * (1 - a_l)
+        # i = 2 -> layer L-1, i = 3 -> layer L-2, ...
+        #
+        for i in range(2, len(y)):
+            delta = numpy.dot(self.weights[-i+1].T, delta) * y[-i] * (1.0 - y[-i])
+            nabla_b[-i] = delta
+            nabla_w[-i] = numpy.dot(delta, y[-i-1].T)
         
         return nabla_w, nabla_b
 
