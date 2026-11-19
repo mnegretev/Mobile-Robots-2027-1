@@ -1,0 +1,26 @@
+# Para instalar las bilbiotecas de Python necesarias
+cd ~/Mobile-Robots-2027-1
+python3 -m venv venv
+source  venv/bin/activate
+pip3 install faster_whisper piper-tts ultralytics
+deactivate
+
+#Para instalar Ollama, revisar:
+https://ollama.com/download
+
+#En cada terminal ejecutar:
+export PYTHONPATH=/home/<user>/Mobile-Robots-2026-2/venv/lib/python3.12/site-packages:$PYTHONPATH
+
+#Para probar text2 speech
+ros2 run text2speech t2s
+ros2 topic pub /tts_query std_msgs/msg/String "{data: 'hola'}" --once 
+
+#Para probar speech2 text
+ros2 run speech2text faster_whisper_asr 
+ros2 topic echo /sp_rec/recognized
+
+#Para probar Yolo
+ros2 run neural_networks yolo
+
+#Para probar el modelo de lenguaje grande:
+ros2 run llm_planning ollama_planning
