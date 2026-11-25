@@ -1,9 +1,8 @@
 from launch import LaunchDescription
 from launch_ros.actions import Node
-from launch.actions import IncludeLaunchDescription, TimerAction, DeclareLaunchArgument
-from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import PathJoinSubstitution, LaunchConfiguration
-from launch_ros.substitutions import FindPackageShare
+from launch.actions import TimerAction, DeclareLaunchArgument
+from launch.conditions import IfCondition
+from launch.substitutions import LaunchConfiguration
 from ament_index_python.packages import get_package_share_directory
 import os
 
@@ -12,6 +11,11 @@ def generate_launch_description():
         'controller',
         default_value='pure_pursuit',
         description='Controller for path following'
+    )
+    rviz_arg = DeclareLaunchArgument(
+        'use_rviz',
+        default_value='true',
+        description='Open the navigation RViz window'
     )
 
     controller = LaunchConfiguration('controller')
@@ -31,6 +35,7 @@ def generate_launch_description():
         executable='rviz2',
         name='rviz2',
         arguments=['-d', rviz_config_file,'--ros-args', '-p', 'use_sim_time:=True',],
+        condition=IfCondition(LaunchConfiguration('use_rviz')),
     )
     map_server_node = Node(
         package='nav2_map_server',
@@ -107,12 +112,13 @@ def generate_launch_description():
     )
         
     return LaunchDescription([
+        rviz_arg,
         lira_gui_node,
         rviz2_node,
         map_server_node,        
         amcl_node,
         TimerAction(
-            period=5.0,
+            period=8.0,
             actions=[
                 nav2_util_node
             ]
@@ -123,5 +129,46 @@ def generate_launch_description():
         path_smoothing_node,
         pure_pursuit_node,
 
-        ik_node
+        ik_node,
+
+        Node(
+            package='ros_gz_bridge',
+            executable='parameter_bridge',
+            name='camera_voice_bridge',
+            output='screen',
+            arguments=[
+                '--ros-args', '-p',
+                'config_file:=' + os.path.join(
+                    get_package_share_directory('final_project'),
+                    'config',
+                    'camera_bridge.yaml'),
+                '-p', 'use_sim_time:=True',
+            ],
+        ),
+        Node(
+            package='speech2text',
+            executable='faster_whisper_asr',
+            name='faster_whisper_asr',
+            output='screen',
+        ),
+        Node(
+            package='text2speech',
+            executable='t2s',
+            name='text_to_speech',
+            output='screen',
+        ),
+        Node(
+            package='obj_recognizer',
+            executable='obj_recognizer_solved',
+            name='obj_recognizer_solved',
+            output='screen',
+            parameters=[{'use_sim_time': True}],
+        ),
+        Node(
+            package='final_project',
+            executable='final_project_solved',
+            name='voice_skill_node',
+            output='screen',
+            parameters=[{'use_sim_time': True}],
+        ),
     ])

@@ -3,7 +3,7 @@
 <package format="3">
   <name>final_project</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>Spoken commands for the simulated service robot.</description>
   <maintainer email="marco.negrete@ingenieria.unam.edu">thedoctor</maintainer>
   <license>LGPL-3.0-only</license>
 
@@ -11,9 +11,16 @@
   <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>sensor_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>trajectory_msgs</depend>
+  <depend>tf2_ros</depend>
   <depend>navig_msgs</depend>
   <depend>manip_msgs</depend>
   <depend>pumas_vision_msgs</depend>
+  <exec_depend>speech2text</exec_depend>
+  <exec_depend>text2speech</exec_depend>
+  <exec_depend>obj_recognizer</exec_depend>
+  <exec_depend>house_simul</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

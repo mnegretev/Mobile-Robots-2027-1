@@ -136,5 +136,10 @@ def launch_setup(context, *args, **kwargs):
 
 def generate_launch_description():
     return LaunchDescription([
+        DeclareLaunchArgument(
+            'realsense',
+            default_value='false',
+            description='Attach the RealSense camera used for object recognition'
+        ),
         OpaqueFunction(function=launch_setup)
     ])
