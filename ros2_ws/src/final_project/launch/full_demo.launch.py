@@ -4,11 +4,13 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
 
 
 def generate_launch_description():
+    whisper_model = LaunchConfiguration('whisper_model')
     house = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(
@@ -27,6 +29,17 @@ def generate_launch_description():
                 'final_project.launch.py',
             )
         ),
-        launch_arguments={'use_rviz': 'false'}.items(),
+        launch_arguments={
+            'use_rviz': 'false',
+            'whisper_model': whisper_model,
+        }.items(),
     )
-    return LaunchDescription([house, skills])
+    return LaunchDescription([
+        DeclareLaunchArgument(
+            'whisper_model',
+            default_value='base',
+            description='faster-whisper size or local model directory',
+        ),
+        house,
+        skills,
+    ])

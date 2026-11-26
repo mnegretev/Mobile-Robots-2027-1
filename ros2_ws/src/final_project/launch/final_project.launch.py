@@ -17,6 +17,11 @@ def generate_launch_description():
         default_value='true',
         description='Open the navigation RViz window'
     )
+    whisper_arg = DeclareLaunchArgument(
+        'whisper_model',
+        default_value='base',
+        description='faster-whisper size or local model directory'
+    )
 
     controller = LaunchConfiguration('controller')
 
@@ -113,6 +118,7 @@ def generate_launch_description():
         
     return LaunchDescription([
         rviz_arg,
+        whisper_arg,
         lira_gui_node,
         rviz2_node,
         map_server_node,        
@@ -150,6 +156,9 @@ def generate_launch_description():
             executable='faster_whisper_asr',
             name='faster_whisper_asr',
             output='screen',
+            parameters=[{
+                'model_size': LaunchConfiguration('whisper_model'),
+            }],
         ),
         Node(
             package='text2speech',
