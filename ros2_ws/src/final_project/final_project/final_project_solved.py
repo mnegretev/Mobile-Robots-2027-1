@@ -8,6 +8,7 @@ import json
 import math
 import threading
 import time
+import traceback
 from datetime import datetime
 
 import rclpy
@@ -109,8 +110,15 @@ class VoiceSkillNode(Node):
         try:
             self._handle(text)
         except Exception as exc:
-            self.get_logger().error('No pude ejecutar la orden: %s' % exc)
-            self._speak('No pude completar la orden.')
+            self.get_logger().error(
+                'No pude ejecutar la orden: %s\n%s' % (exc, traceback.format_exc()))
+            detail = str(exc).strip().replace('\n', ' ')
+            if len(detail) > 140:
+                detail = detail[:140]
+            if detail:
+                self._speak('No pude completar la orden. ' + detail)
+            else:
+                self._speak('No pude completar la orden.')
         finally:
             with self.lock:
                 self.busy = False
@@ -443,7 +451,11 @@ class VoiceSkillNode(Node):
         deadline = time.monotonic() + timeout
         while rclpy.ok() and time.monotonic() < deadline:
             if future.done():
-                return future.exception() is None and future.result() is not None
+                try:
+                    return future.result() is not None
+                except Exception as exc:
+                    self.get_logger().error('El servicio falló: %s' % exc)
+                    return False
             time.sleep(0.05)
         return False
 
@@ -561,7 +573,9 @@ class VoiceSkillNode(Node):
             data = json.loads(content[start:end + 1])
         except json.JSONDecodeError:
             return None
-        skill = str(data.get('skill', 'reject'))
+        if not isinstance(data, dict):
+            return None
+        skill = str(data.get('skill', 'reject')).strip().lower()
         say = str(data.get('say') or '').strip()
         if skill == 'navigate':
             place = str(data.get('place') or '')
