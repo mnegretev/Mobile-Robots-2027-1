@@ -33,7 +33,9 @@ class FasterWhisperNode(Node):
     def __init__(self):
         super().__init__("faster_whisper_node")
         self.get_logger().info("INITIALIZING FASTER WHISPER NODE")
-        self.model_size = "small"
+        self.declare_parameter("model_size", "base")
+        self.model_size = (
+            self.get_parameter("model_size").get_parameter_value().string_value)
         self.pub_recognized = self.create_publisher(String, "/sp_rec/recognized", 1)
         self.sub_tts = self.create_subscription(
             Bool, "/tts/active", self._on_tts_active, 10)
@@ -220,7 +222,16 @@ class FasterWhisperNode(Node):
 
     def spin(self):
         self.get_logger().info(
-            "Creating Faster Whisper model with size " + self.model_size)
+            "Cargando Whisper '%s' en CPU (2 hilos). La primera vez lo descarga y puede tardar un minuto."
+            % self.model_size)
+        model = WhisperModel(
+            self.model_size,
+            device="cpu",
+            compute_type="int8",
+            cpu_threads=2,
+            num_workers=1,
+        )
+        self.get_logger().info("Whisper model created")
         audio = pyaudio.PyAudio()
         stream = None
         reader = None
@@ -235,9 +246,6 @@ class FasterWhisperNode(Node):
             reader = threading.Thread(
                 target=self._reader_loop, args=(stream,), daemon=True)
             reader.start()
-            model = WhisperModel(
-                self.model_size, device="cpu", compute_type="int8")
-            self.get_logger().info("Whisper model created")
             sample_width = audio.get_sample_size(FORMAT)
             self._set_state(LISTENING)
             while self.running and rclpy.ok():
@@ -248,7 +256,7 @@ class FasterWhisperNode(Node):
                 try:
                     self._write_wav(frames, sample_width)
                     segments, info = model.transcribe(
-                        WAVE_OUTPUT_FILENAME, beam_size=5, language="es")
+                        WAVE_OUTPUT_FILENAME, beam_size=1, language="es")
                     self.get_logger().info(
                         "Detected language '%s' with probability %f" % (
                             info.language, info.language_probability))
