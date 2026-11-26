@@ -11,6 +11,7 @@ import time
 from datetime import datetime
 
 import rclpy
+from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.time import Time
 from geometry_msgs.msg import PoseStamped, Twist
@@ -119,7 +120,7 @@ class VoiceSkillNode(Node):
         self.get_logger().info('Orden: %s -> %s' % (text, command.get('skill')))
         if command.get('try_llm') and self.get_parameter('use_llm').value:
             refined = self._ask_llm(text)
-            if refined is not None:
+            if refined is not None and self._llm_can_replace(command, refined):
                 command = refined
                 self.get_logger().info('El modelo eligió %s' % command.get('skill'))
         self._execute(command)
@@ -370,7 +371,7 @@ class VoiceSkillNode(Node):
         point.time_from_start.nanosec = int((duration % 1.0) * 1e9)
         msg.points.append(point)
         self.arm_pub.publish(msg)
-        time.sleep(duration + 0.4)
+        self._sleep_sim(duration + 0.8)
 
     def _recognize(self, object_name):
         if object_name:
@@ -417,11 +418,21 @@ class VoiceSkillNode(Node):
             return
         self._speak('Veo %s.' % ', '.join(names))
 
+    def _sleep_sim(self, seconds):
+        deadline = self.get_clock().now() + Duration(seconds=float(seconds))
+        while rclpy.ok() and self.get_clock().now() < deadline:
+            time.sleep(0.05)
+
+    def _llm_can_replace(self, original, refined):
+        if original.get('skill') != 'answer':
+            return True
+        return refined.get('skill') == 'answer'
+
     def _wait_future(self, future, timeout):
         deadline = time.monotonic() + timeout
         while rclpy.ok() and time.monotonic() < deadline:
             if future.done():
-                return future.result() is not None
+                return future.exception() is None and future.result() is not None
             time.sleep(0.05)
         return False
 
@@ -459,7 +470,11 @@ class VoiceSkillNode(Node):
         except Exception as exc:
             self.get_logger().info('Sin modelo de lenguaje: %s' % exc)
             return None
-        return self._parse_llm(content)
+        try:
+            return self._parse_llm(content)
+        except Exception as exc:
+            self.get_logger().info('Respuesta del modelo no usable: %s' % exc)
+            return None
 
     def _parse_llm(self, content):
         start = content.find('{')

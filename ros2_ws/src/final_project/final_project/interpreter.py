@@ -69,7 +69,8 @@ ARM_POSES = {
     },
     'mirar': {
         'aliases': ('mirar', 'observa', 'camara'),
-        'joints': (0.0, -0.9, -0.4, 0.0, 1.2, 0.0),
+        # Wrist stays near zero so the camera looks forward, not at the floor.
+        'joints': (0.0, -0.6, -0.15, 0.0, 0.15, 0.0),
         'label': 'para mirar',
     },
     'estirar': {
@@ -106,7 +107,13 @@ _GO = (
 )
 _LOOK = (
     'reconoce', 'reconocer', 'busca', 'buscar', 'que ves', 'que hay',
-    'identifica', 'observa', 'que objeto', 'que objetos',
+    'identifica', 'observa', 'que objeto', 'que objetos', 'alrededor',
+    'enfrente', 'al frente',
+)
+_QUESTION = (
+    'que ', 'quien', 'cual', 'como ', 'donde', 'por que', 'cuanto',
+    'sabes', 'dime', 'puedes', 'te gusta', 'gusta ', 'crees', 'opinas',
+    'prefieres',
 )
 _ARM = ('brazo', 'manipulador', 'pinza', 'gripper', 'articulacion')
 _OBJECTS = (
@@ -273,7 +280,22 @@ def _arm_command(text):
     }
 
 
+def _arithmetic(text):
+    match = re.search(
+        r'(?:cuanto es|cuanto son|suma|sumar)\s+(-?\d+)\s+(?:mas|y)\s+(-?\d+)',
+        text,
+    )
+    if match is None:
+        return None
+    left = int(match.group(1))
+    right = int(match.group(2))
+    return '%d más %d son %d.' % (left, right, left + right)
+
+
 def _faq(text):
+    total = _arithmetic(text)
+    if total:
+        return total, None
     if _has(text, ('como te llamas', 'quien eres', 'que eres', 'tu nombre')):
         return 'Soy el robot de servicio del curso de robots móviles.', None
     if _has(text, ('que puedes', 'que sabes hacer', 'cuales son tus', 'ayuda')):
@@ -282,6 +304,25 @@ def _faq(text):
             'mover el brazo y contestar preguntas.',
             None,
         )
+    if _has(text, (
+        'que te gusta', 'te gusta hacer', 'que prefieres', 'que disfrutas',
+    )):
+        return (
+            'Me gusta recorrer la casa, mirar lo que hay y mover el brazo.',
+            None,
+        )
+    if _has(text, (
+        'te gusta sumar', 'te gustan las matematicas', 'sabes sumar',
+        'puedes sumar', 'gusta sumar',
+    )):
+        return (
+            'Sí puedo sumar. Pregúntame cuánto es dos más tres.',
+            None,
+        )
+    if _has(text, ('como estas', 'que tal estas', 'como te va', 'como te sientes')):
+        return 'Estoy bien. Listo para ir a un lugar, mirar o mover el brazo.', None
+    if _has(text, ('gracias', 'muchas gracias')):
+        return 'De nada.', None
     if _has(text, ('donde estas', 'donde te encuentras', 'tu posicion', 'tu ubicacion')):
         return 'Déjame ver dónde estoy.', 'pose'
     if _has(text, ('que hora', 'que horas')):
@@ -364,10 +405,7 @@ def interpret(text):
         if _has(raw, keys):
             return _reject(message)
 
-    if '?' in (text or '') or _has(raw, (
-        'que ', 'quien', 'cual', 'como ', 'donde', 'por que', 'cuanto',
-        'sabes', 'dime', 'puedes decir',
-    )):
+    if '?' in (text or '') or _has(raw, _QUESTION):
         faq = _faq(raw)
         if faq:
             say, dynamic = faq

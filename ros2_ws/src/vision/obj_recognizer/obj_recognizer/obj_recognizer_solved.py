@@ -195,7 +195,7 @@ class ObjRecognizerSolved(Node):
         if self.model is None:
             return []
         try:
-            results = self.model.predict(image, verbose=False, conf=0.35)
+            results = self.model.predict(image, verbose=False, conf=0.25)
         except Exception as exc:
             self.get_logger().warning('YOLO falló: %s' % exc)
             return []
@@ -236,7 +236,7 @@ class ObjRecognizerSolved(Node):
             contours, _hier = cv2.findContours(
                 mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             best = None
-            best_area = 1200
+            best_area = 400
             for contour in contours:
                 area = cv2.contourArea(contour)
                 x_pix, y_pix, box_w, box_h = cv2.boundingRect(contour)
