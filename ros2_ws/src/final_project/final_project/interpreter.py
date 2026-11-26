@@ -106,10 +106,11 @@ _GO = (
     'anda hacia',
 )
 _LOOK = (
-    'reconoce', 'reconocer', 'busca', 'buscar', 'que ves', 'que hay',
-    'identifica', 'observa', 'que objeto', 'que objetos', 'alrededor',
-    'enfrente', 'al frente',
+    'reconoce', 'reconocer', 'busca', 'buscar', 'que ves', 'que vez',
+    'que hay', 'identifica', 'observa', 'que objeto', 'que objetos',
+    'alrededor', 'enfrente', 'al frente', 'delante',
 )
+_SEARCH = ('busca', 'buscar', 'reconoce', 'reconocer', 'identifica')
 _QUESTION = (
     'que ', 'quien', 'cual', 'como ', 'donde', 'por que', 'cuanto',
     'sabes', 'dime', 'puedes', 'te gusta', 'gusta ', 'crees', 'opinas',
@@ -366,16 +367,19 @@ def interpret(text):
     if wants_look:
         if place and (wants_go or ' en ' in (' ' + raw + ' ')):
             return _place_cmd(place, then='recognize', obj=obj)
+        move_arm = _has(raw, _SEARCH)
         if obj is None:
-            spoken = 'Voy a mirar qué objetos hay.'
+            spoken = 'Voy a buscar lo que haya.' if move_arm else ''
         elif obj in PLACES:
             spoken = 'Voy a buscar %s.' % PLACES[obj]['label']
         else:
             spoken = 'Voy a buscar %s.' % obj
+            move_arm = True
         return {
             'skill': 'recognize',
             'object': obj,
             'say': spoken,
+            'move_arm': move_arm,
             'try_llm': False,
             'pose': 'mirar',
             'place': None,
@@ -407,20 +411,20 @@ def interpret(text):
 
     if '?' in (text or '') or _has(raw, _QUESTION):
         faq = _faq(raw)
-        if faq:
+        if faq and faq[1]:
             say, dynamic = faq
             return {
                 'skill': 'answer',
                 'say': say,
                 'dynamic': dynamic,
-                'try_llm': dynamic is None and say.startswith('No tengo'),
+                'try_llm': False,
                 'pose': None,
                 'place': None,
                 'object': None,
             }
         return {
             'skill': 'answer',
-            'say': 'No tengo esa información ahora.',
+            'say': '',
             'dynamic': None,
             'try_llm': True,
             'pose': None,

@@ -119,10 +119,20 @@ class VoiceSkillNode(Node):
         command = interpret(text)
         self.get_logger().info('Orden: %s -> %s' % (text, command.get('skill')))
         if command.get('try_llm') and self.get_parameter('use_llm').value:
-            refined = self._ask_llm(text)
-            if refined is not None and self._llm_can_replace(command, refined):
-                command = refined
-                self.get_logger().info('El modelo eligió %s' % command.get('skill'))
+            if command.get('skill') in ('answer', 'reject') and not command.get('dynamic'):
+                spoken = self._chat_llm(text)
+                command = {
+                    'skill': 'answer',
+                    'say': spoken or 'No pude consultar el modelo de lenguaje.',
+                    'dynamic': None,
+                    'try_llm': False,
+                }
+            else:
+                refined = self._ask_llm(text)
+                if refined is not None and self._llm_can_replace(command, refined):
+                    command = refined
+                    self.get_logger().info(
+                        'El modelo eligió %s' % command.get('skill'))
         self._execute(command)
 
     def _execute(self, command):
@@ -144,8 +154,9 @@ class VoiceSkillNode(Node):
                 self._recognize(command.get('object'))
             return
         if skill == 'recognize':
-            self._speak(command.get('say') or 'Voy a mirar.')
-            self._move_named_pose('mirar', speak=False)
+            if command.get('move_arm'):
+                self._speak(command.get('say') or 'Voy a mirar.')
+                self._move_named_pose('mirar', speak=False)
             self._recognize(command.get('object'))
             return
         if skill == 'manipulate':
@@ -435,6 +446,71 @@ class VoiceSkillNode(Node):
                 return future.exception() is None and future.result() is not None
             time.sleep(0.05)
         return False
+
+    def _chat_llm(self, text):
+        """Ask the language model for a spoken answer, not a robot command."""
+        url = self.get_parameter('ollama_url').value
+        model = self.get_parameter('ollama_model').value
+        prompt = (
+            'Eres el robot de servicio del curso de robots móviles de la FI UNAM. '
+            'Responde en español, en una o dos frases cortas, para decirlas en voz alta. '
+            'No uses JSON ni listas. '
+            'Puedes ir a lugares de la casa, reconocer lo que la cámara ve ahora, '
+            'mover el brazo y contestar preguntas. '
+            'No puedes volar, abrir puertas, cocinar, subir escaleras ni tomar objetos. '
+            'Pregunta del usuario: ' + text
+        )
+        self.get_logger().info('Consultando el modelo de lenguaje')
+        content = self._ollama(url, model, prompt, 60.0)
+        if not content:
+            return ''
+        parsed = None
+        try:
+            parsed = self._parse_llm(content)
+        except Exception as exc:
+            self.get_logger().info('Respuesta del modelo no usable: %s' % exc)
+        if parsed and parsed.get('say'):
+            return str(parsed['say']).strip()
+        reply = str(content).strip().strip('`').strip()
+        if len(reply) > 320:
+            reply = reply[:320].rsplit(' ', 1)[0]
+        return reply
+
+    def _ollama(self, url, model, prompt, timeout):
+        try:
+            import requests
+        except ImportError:
+            self.get_logger().error('Falta el paquete requests')
+            return ''
+        try:
+            response = requests.post(
+                url,
+                json={
+                    'model': model,
+                    'stream': False,
+                    'messages': [{'role': 'user', 'content': prompt}],
+                    'options': {
+                        'num_ctx': 1024,
+                        'num_predict': 80,
+                        'temperature': 0.4,
+                    },
+                },
+                timeout=timeout,
+            )
+            response.raise_for_status()
+            content = response.json()['message']['content']
+        except Exception as exc:
+            self.get_logger().error('Sin modelo de lenguaje: %s' % exc)
+            return ''
+        if isinstance(content, list):
+            parts = []
+            for part in content:
+                if isinstance(part, dict):
+                    parts.append(str(part.get('text') or ''))
+                else:
+                    parts.append(str(part))
+            return ' '.join(part for part in parts if part).strip()
+        return str(content or '').strip()
 
     def _ask_llm(self, text):
         try:
