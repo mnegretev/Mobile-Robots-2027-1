@@ -258,6 +258,14 @@ def _arm_command(text):
             'delta': -0.6, 'say': 'Giro el brazo a la derecha.',
             'try_llm': False, 'pose': None,
         }
+    if _has(text, ('gira', 'girar', 'rotar', 'rota', 'vuelta')):
+        delta = -0.8 if _word(text, 'derecha') else 0.8
+        side = 'a la derecha' if delta < 0 else 'a la izquierda'
+        return {
+            'skill': 'manipulate', 'mode': 'relative', 'joint': 0,
+            'delta': delta, 'say': 'Giro el brazo %s.' % side,
+            'try_llm': False, 'pose': None,
+        }
     numbers = re.findall(r'-?\d+(?:\.\d+)?', text)
     if len(numbers) >= 6:
         vals = [float(n) for n in numbers[:6]]
@@ -293,10 +301,48 @@ def _arithmetic(text):
     return '%d más %d son %d.' % (left, right, left + right)
 
 
+def _base_turn(text, original):
+    """Spin the mobile base. Questions stay with the language model."""
+    if '?' in (original or '') or _has(text, _QUESTION):
+        return None
+    if not _has(text, (
+        'gira', 'girar', 'rotar', 'rota', 'vuelta', 'vueltate',
+        'sobre tu eje', 'sobre su eje', 'sobre el eje',
+    )):
+        return None
+    if _word(text, 'derecha') or _has(text, ('horario',)):
+        direction = -1.0
+        side = 'a la derecha'
+    else:
+        direction = 1.0
+        side = 'a la izquierda'
+    if _has(text, ('media vuelta',)):
+        radians = 3.1416
+    elif _has(text, ('vuelta completa', 'una vuelta', 'sobre tu eje', 'sobre su eje', 'sobre el eje')):
+        radians = 6.2832
+    else:
+        radians = 1.5708
+    return {
+        'skill': 'spin',
+        'direction': direction,
+        'radians': radians,
+        'say': 'Giro sobre mi eje %s.' % side,
+        'try_llm': False,
+        'pose': None,
+        'place': None,
+        'object': None,
+    }
+
+
 def _faq(text):
     total = _arithmetic(text)
     if total:
         return total, None
+    if _has(text, ('que no puedes', 'que no sabes', 'no puedes hacer', 'que no haces')):
+        return (
+            'No puedo volar, abrir puertas, cocinar, subir escaleras ni tomar objetos.',
+            None,
+        )
     if _has(text, ('como te llamas', 'quien eres', 'que eres', 'tu nombre')):
         return 'Soy el robot de servicio del curso de robots móviles.', None
     if _has(text, ('que puedes', 'que sabes hacer', 'cuales son tus', 'ayuda')):
@@ -409,9 +455,13 @@ def interpret(text):
         if _has(raw, keys):
             return _reject(message)
 
+    turn = _base_turn(raw, text)
+    if turn:
+        return turn
+
     if '?' in (text or '') or _has(raw, _QUESTION):
         faq = _faq(raw)
-        if faq and faq[1]:
+        if faq:
             say, dynamic = faq
             return {
                 'skill': 'answer',

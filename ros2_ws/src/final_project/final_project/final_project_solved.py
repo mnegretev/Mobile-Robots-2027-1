@@ -170,6 +170,9 @@ class VoiceSkillNode(Node):
         if skill == 'manipulate':
             self._manipulate(command)
             return
+        if skill == 'spin':
+            self._spin_base(command)
+            return
         self._speak('No puedo hacer eso.')
 
     def _answer_text(self, command):
@@ -289,6 +292,23 @@ class VoiceSkillNode(Node):
             return False
         self._speak('Ya llegué a %s.' % label)
         return True
+
+    def _spin_base(self, command):
+        direction = 1.0 if float(command.get('direction', 1.0)) >= 0.0 else -1.0
+        radians = abs(float(command.get('radians', 1.5708)))
+        speed = 0.6
+        sim_seconds = max(0.4, radians / speed)
+        self._speak(command.get('say') or 'Estoy girando.')
+        twist = Twist()
+        twist.angular.z = direction * speed
+        started = time.monotonic()
+        goal = self.get_clock().now() + Duration(seconds=sim_seconds)
+        while rclpy.ok() and time.monotonic() - started < 45.0:
+            if self.get_clock().now() >= goal:
+                break
+            self.cmd_pub.publish(twist)
+            time.sleep(0.1)
+        self._stop_base()
 
     def _stop_base(self):
         msg = Twist()
@@ -416,6 +436,9 @@ class VoiceSkillNode(Node):
             self._speak_recognition(object_name, found, result.obj)
             return
         names = [item.id for item in result.objs if item.id]
+        if names == ['__sin_imagen__']:
+            self._speak('No estoy recibiendo imagen de la cámara.')
+            return
         self._speak_recognition(None, names, None)
 
     def _speak_recognition(self, requested, names, one):
@@ -473,7 +496,7 @@ class VoiceSkillNode(Node):
             'Pregunta del usuario: ' + text
         )
         self.get_logger().info('Consultando el modelo de lenguaje')
-        content = self._ollama(url, model, prompt, 90.0)
+        content = self._ollama(url, model, prompt, 25.0)
         if not content:
             return ''
         parsed = None

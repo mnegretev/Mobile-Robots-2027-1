@@ -184,6 +184,12 @@ class ObjRecognizerSolved(Node):
 
     def _on_all(self, request, response):
         del request
+        if self.last_bgr is None:
+            missing = VisionObject()
+            missing.id = '__sin_imagen__'
+            response.objs = [missing]
+            self.get_logger().error('No hay imagen de la cámara')
+            return response
         response.objs = self._detect(None)
         names = ', '.join(item.id for item in response.objs) or 'ninguno'
         self.get_logger().info('Objetos: ' + names)
