@@ -25,7 +25,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'final_project_solved = final_project.final_project_solved:main'
+            'final_project = final_project.final_project:main'
         ],
     },
 )
