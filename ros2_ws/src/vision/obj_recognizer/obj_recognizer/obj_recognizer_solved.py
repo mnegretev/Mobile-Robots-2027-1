@@ -8,7 +8,12 @@ import os
 
 import rclpy
 from rclpy.node import Node
-from rclpy.qos import qos_profile_sensor_data
+from rclpy.qos import (
+    HistoryPolicy,
+    QoSProfile,
+    ReliabilityPolicy,
+    qos_profile_sensor_data,
+)
 from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import Pose
 from sensor_msgs.msg import Image, PointCloud2
@@ -52,17 +57,17 @@ COCO_ES = {
     'sports ball': 'pelota',
 }
 
-# OpenCV hue is 0-180. Two ranges cover red, which wraps around 0.
+# OpenCV hue is 0-180. Gazebo colors are dimmer than real photos.
 _COLORS = (
     ('coca', (
-        ((0, 110, 70), (10, 255, 255)),
-        ((170, 110, 70), (180, 255, 255)),
+        ((0, 60, 40), (12, 255, 255)),
+        ((168, 60, 40), (180, 255, 255)),
     )),
     ('mostaza', (
-        ((18, 110, 90), (36, 255, 255)),
+        ((16, 60, 50), (38, 255, 255)),
     )),
     ('cheezit', (
-        ((8, 130, 110), (18, 255, 255)),
+        ((6, 70, 50), (20, 255, 255)),
     )),
 )
 
@@ -74,7 +79,13 @@ class ObjRecognizerSolved(Node):
         super().__init__('obj_recognizer_solved')
         self.last_bgr = None
         self.last_cloud = None
+        self._announced_image = False
         self.model = self._load_model()
+        reliable = QoSProfile(
+            depth=5,
+            reliability=ReliabilityPolicy.RELIABLE,
+            history=HistoryPolicy.KEEP_LAST,
+        )
         image_topics = (
             '/camera/color/image_raw',
             '/camera/color/image_optical',
@@ -83,6 +94,8 @@ class ObjRecognizerSolved(Node):
         for topic in image_topics:
             self.create_subscription(
                 Image, topic, self._on_image, qos_profile_sensor_data)
+            self.create_subscription(
+                Image, topic, self._on_image, reliable)
         cloud_topics = (
             '/camera/depth/points',
             '/camera/depth/points_optical',
@@ -123,8 +136,14 @@ class ObjRecognizerSolved(Node):
 
     def _on_image(self, msg):
         image = self._to_bgr(msg)
-        if image is not None:
-            self.last_bgr = image
+        if image is None:
+            return
+        self.last_bgr = image
+        if not self._announced_image:
+            self._announced_image = True
+            self.get_logger().info(
+                'Imagen de cámara %dx%d %s' % (
+                    msg.width, msg.height, msg.encoding or ''))
 
     def _on_cloud(self, msg):
         self.last_cloud = msg
@@ -132,8 +151,14 @@ class ObjRecognizerSolved(Node):
     def _to_bgr(self, msg):
         if numpy is None or cv2 is None or msg.height == 0 or msg.width == 0:
             return None
-        encoding = (msg.encoding or '').lower()
+        encoding = (msg.encoding or '').lower().replace('8uc3', 'rgb8')
         array = numpy.frombuffer(msg.data, dtype=numpy.uint8)
+        channels = 4 if 'a8' in encoding else 3
+        row = msg.step if msg.step else msg.width * channels
+        if row >= msg.width * channels and array.size >= msg.height * row:
+            array = array[:msg.height * row].reshape((msg.height, row))
+            array = array[:, :msg.width * channels].reshape(
+                (msg.height, msg.width, channels))
         if encoding in ('rgb8', 'bgr8') and array.size == msg.height * msg.width * 3:
             image = array.reshape((msg.height, msg.width, 3))
             if encoding == 'rgb8':
@@ -195,7 +220,8 @@ class ObjRecognizerSolved(Node):
         if self.model is None:
             return []
         try:
-            results = self.model.predict(image, verbose=False, conf=0.25)
+            results = self.model.predict(
+                image, verbose=False, conf=0.15, imgsz=320)
         except Exception as exc:
             self.get_logger().warning('YOLO falló: %s' % exc)
             return []
@@ -236,7 +262,7 @@ class ObjRecognizerSolved(Node):
             contours, _hier = cv2.findContours(
                 mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             best = None
-            best_area = 400
+            best_area = 80
             for contour in contours:
                 area = cv2.contourArea(contour)
                 x_pix, y_pix, box_w, box_h = cv2.boundingRect(contour)

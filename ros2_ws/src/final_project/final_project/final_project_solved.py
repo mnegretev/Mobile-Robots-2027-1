@@ -43,7 +43,7 @@ class VoiceSkillNode(Node):
     def __init__(self):
         super().__init__('voice_skill_node')
         self.declare_parameter('ollama_url', 'http://localhost:11434/api/chat')
-        self.declare_parameter('ollama_model', 'llama3')
+        self.declare_parameter('ollama_model', 'llama3.2:1b')
         self.declare_parameter('use_llm', True)
         self.lock = threading.Lock()
         self.busy = False
@@ -473,7 +473,7 @@ class VoiceSkillNode(Node):
             'Pregunta del usuario: ' + text
         )
         self.get_logger().info('Consultando el modelo de lenguaje')
-        content = self._ollama(url, model, prompt, 60.0)
+        content = self._ollama(url, model, prompt, 90.0)
         if not content:
             return ''
         parsed = None
@@ -488,23 +488,35 @@ class VoiceSkillNode(Node):
             reply = reply[:320].rsplit(' ', 1)[0]
         return reply
 
+    def _prepare_http(self):
+        """Ubuntu's HTTP stack expects brotli.error; brotli 1.1 dropped it."""
+        try:
+            import brotli
+        except ImportError:
+            return
+        if not hasattr(brotli, 'error'):
+            brotli.error = getattr(brotli, 'Error', OSError)
+
     def _ollama(self, url, model, prompt, timeout):
+        self._prepare_http()
         try:
             import requests
-        except ImportError:
-            self.get_logger().error('Falta el paquete requests')
+        except Exception as exc:
+            self.get_logger().error('Falta el paquete requests: %s' % exc)
             return ''
         try:
             response = requests.post(
                 url,
+                headers={'Accept-Encoding': 'gzip, deflate'},
                 json={
                     'model': model,
                     'stream': False,
+                    'keep_alive': '30m',
                     'messages': [{'role': 'user', 'content': prompt}],
                     'options': {
-                        'num_ctx': 1024,
-                        'num_predict': 80,
-                        'temperature': 0.4,
+                        'num_ctx': 512,
+                        'num_predict': 40,
+                        'temperature': 0.3,
                     },
                 },
                 timeout=timeout,
@@ -525,9 +537,11 @@ class VoiceSkillNode(Node):
         return str(content or '').strip()
 
     def _ask_llm(self, text):
+        self._prepare_http()
         try:
             import requests
-        except ImportError:
+        except Exception as exc:
+            self.get_logger().error('Falta el paquete requests: %s' % exc)
             return None
         url = self.get_parameter('ollama_url').value
         model = self.get_parameter('ollama_model').value
