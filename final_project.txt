@@ -1,0 +1,26 @@
+FInal Project
+
+--Navigation--
+Node to send 2D navigation goals (geometry_msgs/PoseStamped)
+
+1. LAUNCH SIMULATION & NAVIGATION
+Start the simulation and navigation stack in separate terminals:
+cb
+ros2 launch house_simul house_simul.launch.py realsense:=True
+ros2 launch final_project final_project.launch.py
+
+2. RUN THE NODE
+In a new terminal:
+cb
+ros2 run final_project final_project
+
+3. USAGE
+At the "Goal >" prompt, enter either a predefined location name or (x, y) coordinates:
+- By location name:
+    Goal > kitchen
+  Available locations:
+    dinette, kitchen, gym, lunch, art, bedroom, desk, room, living
+- By coordinates (x y):
+    Goal > 2.0 -1.5
+- Exit the node:
+    Goal > exit
