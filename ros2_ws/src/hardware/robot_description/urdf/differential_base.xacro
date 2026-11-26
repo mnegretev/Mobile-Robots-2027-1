@@ -300,17 +300,17 @@
     </gazebo>
 
     <gazebo reference="laser_link">
-      <sensor name="laser" type="gpu_lidar">
+      <sensor name="laser" type="lidar">
          <pose> 0 0 0 0 0 0 </pose>
          <always_on>true</always_on>
-         <visualize>true</visualize>
-         <update_rate>10</update_rate>
+         <visualize>false</visualize>
+         <update_rate>5</update_rate>
          <topic>scan</topic>
          <gz_frame_id>laser_link</gz_frame_id>
          <lidar>
            <scan>
              <horizontal>
-               <samples>480</samples>
+               <samples>240</samples>
                <min_angle>-2.0944</min_angle>
                <max_angle>2.0944</max_angle>
              </horizontal>

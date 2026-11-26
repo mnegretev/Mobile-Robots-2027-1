@@ -6,8 +6,8 @@
         <camera name="${prefix}camera">
           <horizontal_fov>1.57</horizontal_fov>
           <image>
-            <width>640</width>
-            <height>480</height>
+            <width>320</width>
+            <height>240</height>
           </image>
           <clip>
             <near>0.1</near>
@@ -20,7 +20,7 @@
           </noise>
         </camera>
         <always_on>1</always_on>
-        <update_rate>10</update_rate>
+        <update_rate>5</update_rate>
         <visualize>0</visualize>
       </sensor>
     </gazebo>
@@ -29,8 +29,8 @@
         <camera name="${prefix}camera">
           <horizontal_fov>1.57</horizontal_fov>
           <image>
-            <width>640</width>
-            <height>480</height>
+            <width>320</width>
+            <height>240</height>
             <format>RGB_INT8</format>
           </image>
           <clip>
@@ -44,8 +44,8 @@
           </noise>
         </camera>
         <always_on>1</always_on>
-        <update_rate>10</update_rate>
-        <visualize>1</visualize>
+        <update_rate>5</update_rate>
+        <visualize>0</visualize>
       </sensor>
     </gazebo>
     <gazebo>

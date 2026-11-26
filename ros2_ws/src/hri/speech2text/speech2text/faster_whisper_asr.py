@@ -1,6 +1,7 @@
 import queue
 import signal
 import threading
+import time
 import wave
 
 import numpy
@@ -16,7 +17,7 @@ FORMAT = pyaudio.paInt16
 RATE = 48000
 WAVE_OUTPUT_FILENAME = "/dev/shm/recorder_audio.wav"
 SILENCE_BLOCKS = 12
-POWER_THRESHOLD = 0.05
+POWER_THRESHOLD = 0.008
 PLAYBACK_COOLDOWN_S = 0.4
 
 LISTENING = "LISTENING"
@@ -43,6 +44,7 @@ class FasterWhisperNode(Node):
         self.speak_gen = 0
         self.running = True
         self.channels = 1
+        self._last_power_log = 0.0
 
     def _on_tts_active(self, msg):
         if msg.data:
@@ -136,7 +138,15 @@ class FasterWhisperNode(Node):
             data = self._next_frame()
             if data is None:
                 return []
-            if self._power(data) >= POWER_THRESHOLD:
+            power = self._power(data)
+            now = time.monotonic()
+            if now - self._last_power_log >= 1.0:
+                self._last_power_log = now
+                self.get_logger().info(
+                    "Potencia del micrófono %.4f (umbral %.3f, estado %s)" % (
+                        power, POWER_THRESHOLD, self.state))
+            if power >= POWER_THRESHOLD:
+                self.get_logger().info("Voz detectada")
                 frames.append(data)
                 break
         silence_blocks = 0
