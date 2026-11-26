@@ -2,7 +2,6 @@ import queue
 import signal
 import threading
 import time
-import wave
 
 import numpy
 import pyaudio
@@ -15,7 +14,6 @@ from std_msgs.msg import Bool, String
 CHUNK = 2048
 FORMAT = pyaudio.paInt16
 RATE = 48000
-WAVE_OUTPUT_FILENAME = "/dev/shm/recorder_audio.wav"
 SILENCE_BLOCKS = 12
 POWER_THRESHOLD = 0.008
 PLAYBACK_COOLDOWN_S = 0.4
@@ -163,13 +161,16 @@ class FasterWhisperNode(Node):
                 silence_blocks = 0
         return frames
 
-    def _write_wav(self, frames, sample_width):
-        handle = wave.open(WAVE_OUTPUT_FILENAME, "wb")
-        handle.setnchannels(self.channels)
-        handle.setsampwidth(sample_width)
-        handle.setframerate(RATE)
-        handle.writeframes(b"".join(frames))
-        handle.close()
+    def _to_whisper_audio(self, frames):
+        """PCM 48 kHz int16 to mono float32 at 16 kHz, without PyAV."""
+        pcm = numpy.frombuffer(b"".join(frames), dtype=numpy.int16)
+        if self.channels == 2:
+            usable = pcm.size - (pcm.size % 2)
+            pcm = pcm[:usable].reshape(-1, 2).mean(axis=1)
+        usable = pcm.size - (pcm.size % 3)
+        pcm = pcm[:usable].reshape(-1, 3).mean(axis=1)
+        audio = pcm.astype(numpy.float32) / 32768.0
+        return numpy.ascontiguousarray(audio)
 
     def _select_input_device(self, audio):
         devices = []
@@ -246,7 +247,6 @@ class FasterWhisperNode(Node):
             reader = threading.Thread(
                 target=self._reader_loop, args=(stream,), daemon=True)
             reader.start()
-            sample_width = audio.get_sample_size(FORMAT)
             self._set_state(LISTENING)
             while self.running and rclpy.ok():
                 frames = self._capture_utterance()
@@ -254,18 +254,25 @@ class FasterWhisperNode(Node):
                     continue
                 self._set_state(PROCESSING)
                 try:
-                    self._write_wav(frames, sample_width)
+                    samples = self._to_whisper_audio(frames)
+                    self.get_logger().info(
+                        "Reconociendo %.1f s de audio" % (samples.size / 16000.0))
                     segments, info = model.transcribe(
-                        WAVE_OUTPUT_FILENAME, beam_size=1, language="es")
+                        samples, beam_size=1, language="es", vad_filter=False)
                     self.get_logger().info(
                         "Detected language '%s' with probability %f" % (
                             info.language, info.language_probability))
                     for segment in segments:
+                        text = segment.text.strip()
+                        if not text:
+                            continue
                         self.get_logger().info(
                             "[%.2fs -> %.2fs] %s" % (
-                                segment.start, segment.end, segment.text))
-                        self.pub_recognized.publish(String(data=segment.text))
+                                segment.start, segment.end, text))
+                        self.pub_recognized.publish(String(data=text))
                         break
+                except Exception as exc:
+                    self.get_logger().error("No se pudo reconocer: %s" % exc)
                 finally:
                     with self.lock:
                         follow = SPEAKING if self.tts_playing else LISTENING
