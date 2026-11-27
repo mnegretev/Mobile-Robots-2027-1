@@ -21,8 +21,8 @@ class FasterWhisperNode(Node):
     def __init__(self):
         super().__init__("faster_whisper_node")
         self.get_logger().info("INITIALIZING FASTER WHISPER NODE")
-        self.model_size = "small"
-        self.pwr_threshold = 0.05
+        self.model_size = "tiny"
+        self.pwr_threshold = 0.0001
         self.pub_recognized = self.create_publisher(String, '/sp_rec/recognized', 1)
 
     def spin(self):
