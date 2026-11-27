@@ -6,9 +6,12 @@ and says out loud when the order is impossible or fails.
 
 import json
 import math
+import socket
 import threading
 import time
 import traceback
+import urllib.error
+import urllib.request
 from datetime import datetime
 
 import rclpy
@@ -42,10 +45,12 @@ class VoiceSkillNode(Node):
 
     def __init__(self):
         super().__init__('voice_skill_node')
-        self.declare_parameter('ollama_url', 'http://localhost:11434/api/chat')
+        self.declare_parameter('ollama_url', 'http://127.0.0.1:11434/api/chat')
         self.declare_parameter('ollama_model', 'llama3.2:1b')
         self.declare_parameter('use_llm', True)
         self.lock = threading.Lock()
+        self.llm_lock = threading.Lock()
+        self.active_model = None
         self.busy = False
         self.ignore_until = 0.0
         self.last_said = ''
@@ -76,6 +81,7 @@ class VoiceSkillNode(Node):
         self.recog_all = self.create_client(
             RecognizeObjects, '/vision/recognize_objects')
         self.hello_timer = self.create_timer(6.0, self._hello_once)
+        threading.Thread(target=self._warm_llm, daemon=True).start()
         self.get_logger().info(
             'Escuchando /sp_rec/recognized y /hri/text_command')
 
@@ -484,114 +490,236 @@ class VoiceSkillNode(Node):
 
     def _chat_llm(self, text):
         """Ask the language model for a spoken answer, not a robot command."""
-        url = self.get_parameter('ollama_url').value
-        model = self.get_parameter('ollama_model').value
         prompt = (
-            'Eres el robot de servicio del curso de robots móviles de la FI UNAM. '
-            'Responde en español, en una o dos frases cortas, para decirlas en voz alta. '
-            'No uses JSON ni listas. '
-            'Puedes ir a lugares de la casa, reconocer lo que la cámara ve ahora, '
-            'mover el brazo y contestar preguntas. '
-            'No puedes volar, abrir puertas, cocinar, subir escaleras ni tomar objetos. '
-            'Pregunta del usuario: ' + text
+            'Responde en español, en una sola frase corta, para decirla en voz alta. '
+            'Eres un robot de servicio. Pregunta: ' + text
         )
-        self.get_logger().info('Consultando el modelo de lenguaje')
-        content = self._ollama(url, model, prompt, 25.0)
-        if not content:
+        try:
+            content = self._generate(prompt, 32, 100.0)
+        except Exception as exc:
+            self.get_logger().error('Sin modelo de lenguaje: %s' % exc)
+            return self._llm_failure_say(exc)
+        reply = self._plain_reply(content)
+        if not reply:
             return ''
+        self.get_logger().info('El modelo respondió: ' + reply)
+        return reply
+
+    def _llm_base(self):
+        url = self.get_parameter('ollama_url').value or 'http://127.0.0.1:11434'
+        if '://' not in url:
+            url = 'http://' + url
+        url = url.replace('://localhost', '://127.0.0.1')
+        base = url.rstrip('/')
+        for suffix in ('/api/chat', '/api/generate', '/api/tags'):
+            if base.endswith(suffix):
+                base = base[:-len(suffix)]
+                break
+        return base
+
+    def _installed_models(self):
+        request = urllib.request.Request(self._llm_base() + '/api/tags')
+        with urllib.request.urlopen(request, timeout=4) as response:
+            payload = json.loads(response.read().decode('utf-8'))
+        names = []
+        for item in payload.get('models') or []:
+            name = item.get('name') or item.get('model')
+            if name:
+                names.append(name)
+        return names
+
+    def _choose_model(self, names):
+        wanted = str(self.get_parameter('ollama_model').value or 'llama3.2:1b')
+        if wanted in names:
+            return wanted
+        for name in (
+            'llama3.2:1b', 'llama3.2:latest', 'tinyllama:latest',
+            'tinyllama', 'phi3:mini', 'gemma2:2b',
+        ):
+            if name in names:
+                return name
+        small = [
+            name for name in names
+            if name not in ('llama3', 'llama3:latest') and ':8b' not in name
+            and '70b' not in name
+        ]
+        if small:
+            return small[0]
+        if names:
+            return names[0]
+        return wanted
+
+    def _model_name(self):
+        if self.active_model:
+            return self.active_model
+        try:
+            names = self._installed_models()
+        except Exception as exc:
+            raise RuntimeError('Ollama no responde: %s' % exc) from exc
+        if not names:
+            raise RuntimeError(
+                'Ollama no tiene modelos. Ejecuta: ollama pull llama3.2:1b')
+        chosen = self._choose_model(names)
+        self.active_model = chosen
+        self.get_logger().info(
+            'Modelo de lenguaje: %s. Instalados: %s' % (chosen, ', '.join(names)))
+        if chosen in ('llama3', 'llama3:latest') or ':8b' in chosen or '70b' in chosen:
+            self.get_logger().error(
+                'Ese modelo no alcanza a responder con Gazebo abierto. '
+                'Ejecuta: ollama pull llama3.2:1b')
+        return chosen
+
+    def _running_models(self):
+        request = urllib.request.Request(self._llm_base() + '/api/ps')
+        with urllib.request.urlopen(request, timeout=4) as response:
+            payload = json.loads(response.read().decode('utf-8'))
+        names = []
+        for item in payload.get('models') or []:
+            name = item.get('name') or item.get('model')
+            if name:
+                names.append(name)
+        return names
+
+    def _unload_heavy_models(self, keep):
+        try:
+            names = self._running_models()
+        except Exception:
+            return
+        for name in names:
+            heavy = (
+                name in ('llama3', 'llama3:latest')
+                or ':8b' in name or '70b' in name or ':70b' in name
+            )
+            if not heavy or name == keep:
+                continue
+            body = json.dumps({
+                'model': name,
+                'keep_alive': 0,
+                'prompt': '',
+            }).encode('utf-8')
+            request = urllib.request.Request(
+                self._llm_base() + '/api/generate',
+                data=body,
+                headers={'Content-Type': 'application/json'},
+            )
+            try:
+                with urllib.request.urlopen(request, timeout=8) as response:
+                    response.read()
+                self.get_logger().info('Saqué de memoria el modelo %s' % name)
+            except Exception as exc:
+                self.get_logger().info(
+                    'No pude sacar de memoria %s: %s' % (name, exc))
+
+    def _warm_llm(self):
+        self.get_logger().info('Preparando el modelo de lenguaje')
+        try:
+            with self.llm_lock:
+                model = self._model_name()
+                self._unload_heavy_models(model)
+                self._generate_with_model(model, 'Di hola.', 8, 120.0)
+            self.get_logger().info('Modelo de lenguaje listo: %s' % model)
+        except Exception as exc:
+            self.get_logger().error('No pude preparar el modelo: %s' % exc)
+
+    def _generate(self, prompt, num_predict, timeout):
+        with self.llm_lock:
+            model = self._model_name()
+            return self._generate_with_model(model, prompt, num_predict, timeout)
+
+    def _generate_with_model(self, model, prompt, num_predict, timeout):
+        self.get_logger().info('Consultando %s' % model)
+        body = json.dumps({
+            'model': model,
+            'prompt': prompt,
+            'stream': True,
+            'keep_alive': '30m',
+            'options': {
+                'num_ctx': 256,
+                'num_predict': int(num_predict),
+                'temperature': 0.2,
+                'num_gpu': 0,
+                'num_thread': 2,
+            },
+        }).encode('utf-8')
+        request = urllib.request.Request(
+            self._llm_base() + '/api/generate',
+            data=body,
+            headers={'Content-Type': 'application/json'},
+        )
+        deadline = time.monotonic() + timeout
+        pieces = []
+        try:
+            with urllib.request.urlopen(request, timeout=30) as response:
+                while time.monotonic() < deadline:
+                    line = response.readline()
+                    if not line:
+                        break
+                    try:
+                        chunk = json.loads(line.decode('utf-8'))
+                    except json.JSONDecodeError:
+                        continue
+                    if chunk.get('error'):
+                        raise RuntimeError(str(chunk['error']))
+                    pieces.append(str(chunk.get('response') or ''))
+                    text = ''.join(pieces).strip()
+                    if chunk.get('done') or self._reply_ready(text):
+                        return text
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode('utf-8', 'replace')[:180]
+            raise RuntimeError('HTTP %s %s' % (exc.code, detail)) from exc
+        except socket.timeout as exc:
+            text = ''.join(pieces).strip()
+            if text:
+                return text
+            raise TimeoutError(
+                'el modelo no alcanzó a responder a tiempo') from exc
+        text = ''.join(pieces).strip()
+        if text:
+            return text
+        raise TimeoutError('el modelo no alcanzó a responder a tiempo')
+
+    def _reply_ready(self, text):
+        if len(text) >= 24 and text[-1] in '.!?':
+            return True
+        return len(text) >= 160
+
+    def _plain_reply(self, content):
         parsed = None
         try:
             parsed = self._parse_llm(content)
-        except Exception as exc:
-            self.get_logger().info('Respuesta del modelo no usable: %s' % exc)
+        except Exception:
+            parsed = None
         if parsed and parsed.get('say'):
-            return str(parsed['say']).strip()
-        reply = str(content).strip().strip('`').strip()
-        if len(reply) > 320:
-            reply = reply[:320].rsplit(' ', 1)[0]
+            reply = str(parsed['say']).strip()
+        else:
+            reply = str(content or '').strip().strip('`').strip()
+        if len(reply) > 220:
+            reply = reply[:220].rsplit(' ', 1)[0]
         return reply
 
-    def _prepare_http(self):
-        """Ubuntu's HTTP stack expects brotli.error; brotli 1.1 dropped it."""
-        try:
-            import brotli
-        except ImportError:
-            return
-        if not hasattr(brotli, 'error'):
-            brotli.error = getattr(brotli, 'Error', OSError)
-
-    def _ollama(self, url, model, prompt, timeout):
-        self._prepare_http()
-        try:
-            import requests
-        except Exception as exc:
-            self.get_logger().error('Falta el paquete requests: %s' % exc)
-            return ''
-        try:
-            response = requests.post(
-                url,
-                headers={'Accept-Encoding': 'gzip, deflate'},
-                json={
-                    'model': model,
-                    'stream': False,
-                    'keep_alive': '30m',
-                    'messages': [{'role': 'user', 'content': prompt}],
-                    'options': {
-                        'num_ctx': 512,
-                        'num_predict': 40,
-                        'temperature': 0.3,
-                    },
-                },
-                timeout=timeout,
+    def _llm_failure_say(self, exc):
+        message = str(exc).lower()
+        if 'no tiene modelos' in message or '404' in message or 'not found' in message:
+            return (
+                'El modelo no está instalado. '
+                'Hay que ejecutar ollama pull llama3.2 uno b.'
             )
-            response.raise_for_status()
-            content = response.json()['message']['content']
-        except Exception as exc:
-            self.get_logger().error('Sin modelo de lenguaje: %s' % exc)
-            return ''
-        if isinstance(content, list):
-            parts = []
-            for part in content:
-                if isinstance(part, dict):
-                    parts.append(str(part.get('text') or ''))
-                else:
-                    parts.append(str(part))
-            return ' '.join(part for part in parts if part).strip()
-        return str(content or '').strip()
+        if (
+            'connection refused' in message
+            or 'urlopen error' in message
+            or 'no responde' in message
+        ):
+            return 'Ollama no está corriendo, no puedo consultar el modelo.'
+        return ''
 
     def _ask_llm(self, text):
-        self._prepare_http()
-        try:
-            import requests
-        except Exception as exc:
-            self.get_logger().error('Falta el paquete requests: %s' % exc)
-            return None
-        url = self.get_parameter('ollama_url').value
-        model = self.get_parameter('ollama_model').value
         prompt = (
-            'Eres el interprete de un robot movil domestico. '
-            'Responde solo JSON con las llaves skill, place, object, pose, say. '
+            'Responde solo JSON con skill, place, object, pose y say. '
             'skill es navigate, recognize, manipulate, answer o reject. '
-            'Lugares: entrada, sala, cocina, recamara, comedor, television, '
-            'balcon, refrigerador, coca, mostaza, cheezit. '
-            'Poses del brazo: home, navegacion, mirar, estirar, saludar, arriba. '
-            'Si la orden es imposible, skill reject y say explica en una frase. '
-            'Si es una pregunta, skill answer y say es la respuesta, '
-            'maximo veinte palabras, en espanol. '
-            'Orden del usuario: ' + text
+            'Orden: ' + text
         )
         try:
-            response = requests.post(
-                url,
-                json={
-                    'model': model,
-                    'stream': False,
-                    'messages': [{'role': 'user', 'content': prompt}],
-                    'options': {'num_ctx': 2048, 'temperature': 0.1},
-                },
-                timeout=8.0,
-            )
-            content = response.json()['message']['content']
+            content = self._generate(prompt, 48, 40.0)
         except Exception as exc:
             self.get_logger().info('Sin modelo de lenguaje: %s' % exc)
             return None
