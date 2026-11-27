@@ -27,7 +27,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            't2s = text2speech.pipertts:main'
+            't2s = text2speech.pipertts:main',
+            'pipertts = text2speech.pipertts:main',
         ],
     },
 )

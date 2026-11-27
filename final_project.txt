@@ -24,3 +24,15 @@ At the "Goal >" prompt, enter either a predefined location name or (x, y) coordi
     Goal > 2.0 -1.5
 - Exit the node:
     Goal > exit
+
+
+Faster_wisper:
+
+SO - sudo apt update && sudo apt install portaudio19-dev
+Virtual envroiment - pip install pyaudio
+
+pip install "huggingface-hub<2.0.0"
+pip install "av<19"
+
+Para el Ollama si no se tiene
+ollama pull ollama3

@@ -26,7 +26,9 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'obj_recognizer_solved = obj_recognizer.obj_recognizer_solved:main'
+            'obj_recognizer = obj_recognizer.obj_recognizer:main',
+            'obj_recognizer_solved = obj_recognizer.obj_recognizer:main',
+            'capture_dataset = obj_recognizer.capture_dataset:main',
         ],
     },
 )

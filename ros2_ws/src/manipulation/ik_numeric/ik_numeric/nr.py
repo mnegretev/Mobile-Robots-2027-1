@@ -13,7 +13,7 @@ from manip_msgs.srv import *
 import numpy
 import math
 
-NAME = "FULL NAME"
+NAME = "Medrano Solano Enrique / Orihuela Castillo Luis"
 
 H0 = [[1.0, 0.0, 0.0, 0.000], # link1 to link_base, joint rotates on Z
       [0.0, 1.0, 0.0, 0.000],
@@ -72,75 +72,86 @@ class IKNewtonRaphsonNode(Node):
         return x,y,z
 
     def forward_kinematics(self, Q):
-        H = numpy.identity(4)
-        R,P,Y = 0,0,0
-        #
-        # TODO:
-        # Calculate the forward kinematics given the set of six angles 'q'
-        # You can use the following steps:
-        #     H = I   # Assing to H a 4x4 identity matrix
-        #     for all q in Q:
-        #         R = Homogeneous transformation with zero translation and rotated q[rad] over z-axis
-        #         R should be a numpy matrix
-        #         H = H * Hs[i] * R
-        #     H = H * Hs[6]
-        #     Get RPY from the resulting H
-        #     Get xyz from the resulting H
-        #
-        
-        return numpy.asarray([H[0,3], H[1,3], H[2,3], R, P, Y])
+        q_vec = numpy.zeros(6, dtype=float)
+        q_arr = numpy.asarray(Q, dtype=float)
+        n_copy = min(len(q_arr), 6)
+        q_vec[:n_copy] = q_arr[:n_copy]
+
+        H = numpy.identity(4, dtype=float)
+        for i in range(6):
+            c = math.cos(q_vec[i])
+            s = math.sin(q_vec[i])
+            Rz = numpy.asarray([
+                [c, -s, 0.0, 0.0],
+                [s,  c, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0]
+            ], dtype=float)
+            H = H @ Hs[i] @ Rz
+        H = H @ Hs[6]
+        R, P, Y = self.matrix_to_euler_xyz(H[0:3, 0:3])
+        return numpy.asarray([H[0, 3], H[1, 3], H[2, 3], R, P, Y], dtype=float)
 
     def jacobian(self, Q):
-        delta_q = 0.000001
-        J = numpy.asarray([[0.0 for q in Q] for i in range(6)])
-        #
-        # TODO:
-        # Calculate the Jacobian evaluated in the point Q
-        # Use the numeric approximation:   f'(x) = (f(x+delta) - f(x-delta))/(2*delta)
-        #
-        # You can do the following steps:
-        #     J = matrix of 6x6 full of zeros
-        #     q_next = [q1+delta       q2        q3   ....     q7
-        #                  q1       q2+delta     q3   ....     q7
-        #                              ....
-        #                  q1          q2        q3   ....   q7+delta]
-        #     q_prev = [q1-delta       q2        q3   ....     q7
-        #                  q1       q2-delta     q3   ....     q7
-        #                              ....
-        #                  q1          q2        q3   ....   q7-delta]
-        #     FOR i = 0,..,5:
-        #           i-th column of J = ( FK(i-th row of q_next) - FK(i-th row of q_prev) ) / (2*delta_q)
-        #     RETURN J
-        #
-        
+        delta_q = 1e-6
+        q_base = numpy.zeros(6, dtype=float)
+        q_arr = numpy.asarray(Q, dtype=float)
+        n_copy = min(len(q_arr), 6)
+        q_base[:n_copy] = q_arr[:n_copy]
+
+        J = numpy.zeros((6, 6), dtype=float)
+        for i in range(6):
+            q_next = q_base.copy()
+            q_prev = q_base.copy()
+            q_next[i] += delta_q
+            q_prev[i] -= delta_q
+            diff = self.forward_kinematics(q_next) - self.forward_kinematics(q_prev)
+            diff[3:] = (diff[3:] + math.pi) % (2.0 * math.pi) - math.pi
+            J[:, i] = diff / (2.0 * delta_q)
         return J
-        
-    def inverse_kinematics(self, Xd, init_guess=numpy.zeros(7), max_iter=2000):
-        Xd= numpy.asarray(Xd)
-        Q = init_guess
+
+    def _solve_ik_from_seed(self, Xd, seed_q, max_iter, tol=1e-3):
+        Q = numpy.asarray(seed_q, dtype=float).copy()
+        X = self.forward_kinematics(Q)
+        error = X - Xd
+        error[3:] = (error[3:] + math.pi) % (2.0 * math.pi) - math.pi
+        iterations = 0
+        while numpy.linalg.norm(error) > tol and iterations < max_iter:
+            J = self.jacobian(Q)
+            dq = numpy.linalg.pinv(J, rcond=1e-3) @ error
+            step_norm = numpy.linalg.norm(dq)
+            if step_norm > 0.3:
+                dq = dq * (0.3 / step_norm)
+            Q = (Q - dq + math.pi) % (2.0 * math.pi) - math.pi
+            X = self.forward_kinematics(Q)
+            error = X - Xd
+            error[3:] = (error[3:] + math.pi) % (2.0 * math.pi) - math.pi
+            iterations += 1
+        success = bool(numpy.linalg.norm(error) <= tol and numpy.all(numpy.isfinite(Q)))
+        return success, Q, iterations
+
+    def inverse_kinematics(self, Xd, init_guess=numpy.zeros(6), max_iter=2000):
+        Xd = numpy.asarray(Xd, dtype=float)
+        seeds = []
+        if init_guess is not None and len(init_guess) == 6:
+            guess = numpy.asarray(init_guess, dtype=float)
+            if numpy.linalg.norm(guess) < 1e-5:
+                # Perturb all-zero configuration slightly to avoid kinematic singularity
+                seeds.append(numpy.asarray([0.0, -0.15, -0.15, 0.0, 0.15, 0.0], dtype=float))
+            else:
+                seeds.append(guess)
+        else:
+            seeds.append(numpy.asarray([0.0, -0.5, -0.5, 0.0, 0.5, 0.0], dtype=float))
+        seeds.append(numpy.asarray([0.0, -0.8, -0.7, 0.0, 1.2, 0.0], dtype=float))
+
+        Q = seeds[0]
         iterations = 0
         success = False
-        #
-        # TODO:
-        # Solve the IK problem given a desired configuration.
-        # Use the Newton-Raphson method for root finding. (Find the roots of equation FK(q) - Xd = 0)
-        # You can do the following steps:
-        #
-        #    Set an initial guess for joints 'Q'
-        #    Calculate Forward Kinematics 'X' by calling the corresponding function
-        #    Calcualte error = X - Xd
-        #    Ensure orientation angles of error are in (-pi,pi]
-        #    WHILE |error| > TOL and iterations < maximum iterations:
-        #        Calculate Jacobian
-        #        Update estimated Q with Q = Q - pseudo_inverse(J)*error
-        #        Ensure all angles q are in [-pi,pi]
-        #        Recalculate forward kinematics X
-        #        Recalculate error and ensure angles are in (-pi,pi]
-        #        Increment iterations
-        #    Set success if maximum iterations were not exceeded
-        #    Return success and calculated Q
-        #
-        
+        for seed in seeds:
+            success, Q, iterations = self._solve_ik_from_seed(Xd, seed, max_iter)
+            if success:
+                break
+
         if success:
             self.get_logger().info("IK solved after " + str(iterations) + " steps. Q=" + str(Q))
         else:
@@ -150,15 +161,15 @@ class IKNewtonRaphsonNode(Node):
     def callback_ik_pose2pose(self, req, resp):
         N = self.get_parameter('N').get_parameter_value().integer_value
         Xd = [req.x, req.y, req.z, req.roll, req.pitch, req.yaw]
-        self.get_logger().info("Calculating IK for " +  str(Xd) + "with max " + str(N) + " iterations and Qo=" + str(req.initial_guess))
+        self.get_logger().info("Calculating IK for " + str(Xd) + " with max " + str(N) + " iterations and Qo=" + str(req.initial_guess))
         success, Q = self.inverse_kinematics(Xd, req.initial_guess, N)
-        resp.q = Q if success else []
+        resp.q = [float(v) for v in Q] if success else []
         return resp
 
     def callback_forward_kinematics(self, req, resp):
         X = self.forward_kinematics(req.q)
-        resp.x, resp.y, resp.z = X[0], X[1], X[2]
-        resp.roll, resp.pitch, resp.yaw = X[3], X[4], X[5]
+        resp.x, resp.y, resp.z = float(X[0]), float(X[1]), float(X[2])
+        resp.roll, resp.pitch, resp.yaw = float(X[3]), float(X[4]), float(X[5])
         return resp
     
     def __init__(self):
