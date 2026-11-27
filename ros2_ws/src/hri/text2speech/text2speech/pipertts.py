@@ -1,6 +1,9 @@
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
+from rclpy.qos import QoSProfile, DurabilityPolicy
+import subprocess
+import time
 from ament_index_python.packages import get_package_share_directory
 import os
 import wave
@@ -26,6 +29,11 @@ class TTSSubscriber(Node):
             normalize_audio=False, # use raw audio from voice
         )
         
+        self.pub_hablando = self.create_publisher(
+            Bool, "/tts/hablando",
+            QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
+        )
+        self.pub_hablando.publish(Bool(data=False))
         self.subscription = self.create_subscription(
             String,
             '/tts_query',
@@ -40,8 +48,18 @@ class TTSSubscriber(Node):
 
     def listener_callback(self, msg):
         self.get_logger().info('Processing txt: "%s"' % msg.data)
-        self.generate_speech(msg.data)
-        os.system(AUDIO_BASH)
+        self.pub_hablando.publish(Bool(data=True))
+        try:
+            time.sleep(0.3)
+            self.generate_speech(msg.data)
+            subprocess.run(
+                ["aplay", "/dev/shm/tts_output.wav"], check=True
+            )
+        except Exception as exc:
+            self.get_logger().error(str(exc))
+        finally:
+            time.sleep(0.8)
+            self.pub_hablando.publish(Bool(data=False))
 
 
 def main(args=None):

@@ -1,90 +1,173 @@
-import pyaudio
+from collections import deque
+import math
 import wave
+
 import numpy
+import pyaudio
 from faster_whisper import WhisperModel
 import rclpy
 from rclpy.node import Node
-from rclpy.duration import Duration
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
+from rclpy.qos import QoSProfile, DurabilityPolicy
 
-#
-# Parameters for recording audio
-#
 CHUNK = 1024
 FORMAT = pyaudio.paInt16
-CHANNELS = 2
-RATE = 44100
-RECORD_SECONDS = 5
+CHANNELS = 1
+RATE = 16000
 WAVE_OUTPUT_FILENAME = "/dev/shm/recorder_audio.wav"
+
 
 class FasterWhisperNode(Node):
     def __init__(self):
         super().__init__("faster_whisper_node")
-        self.get_logger().info("INITIALIZING FASTER WHISPER NODE")
-        self.model_size = "small"
-        self.pwr_threshold = 0.05
-        self.pub_recognized = self.create_publisher(String, '/sp_rec/recognized', 1)
+        self.robot_hablando = False
+        self.sub_hablando = self.create_subscription(
+            Bool, "/tts/hablando", self.recibir_hablando,
+            QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
+        )
+        self.model_size = "tiny"
+        self.pwr_threshold = 0.0001
+        self.pub_recognized = self.create_publisher(
+            String, "/sp_rec/recognized", 10
+        )
+
+    def recibir_hablando(self, msg):
+        if msg.data != self.robot_hablando:
+            self.get_logger().info(
+                "Escucha pausada: el robot habla."
+                if msg.data else "Escucha habilitada."
+            )
+        self.robot_hablando = msg.data
+
+    def potencia(self, data):
+        muestras = numpy.frombuffer(data, dtype=numpy.int16)
+        muestras = muestras.astype(numpy.float32) / 32768.0
+        return float(numpy.mean(muestras ** 2))
 
     def spin(self):
-        self.get_logger().info("Creating Faster Whisper model with size " + self.model_size)
-        model = WhisperModel(self.model_size, device="cpu", compute_type="int8")
-        self.get_logger().info("Whisper model created ")
-        self.get_logger().info("Creating pyaudio stream... " + self.model_size)
-        p = pyaudio.PyAudio()
-        stream = p.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
-        while rclpy.ok():
-            frames = []
-            
-            self.get_logger().info("Waiting for audio with enough power")
-            pwr = 0.0;
-            while pwr < self.pwr_threshold and rclpy.ok():
-                data = stream.read(CHUNK)
-                arr = numpy.frombuffer(data, dtype=numpy.int16)/32768.0
-                pwr = numpy.mean(arr**2)
+        self.get_logger().info("Cargando Whisper tiny en CPU...")
+        model = WhisperModel(
+            self.model_size, device="cpu", compute_type="int8"
+        )
+        audio = pyaudio.PyAudio()
+        stream = None
+        previos = math.ceil(0.6 * RATE / CHUNK)
+        silencio_final = math.ceil(1.5 * RATE / CHUNK)
+        limite = math.ceil(20.0 * RATE / CHUNK)
 
-            self.get_logger().info("Audio detected. Starting to record...")
-            no_audio_counter = 0
-            frames.append(data)
-            while no_audio_counter < 20 and rclpy.ok():
-                data = stream.read(CHUNK)
-                frames.append(data)
-                arr = numpy.frombuffer(data, dtype=numpy.int16)/32768.0
-                pwr = numpy.mean(arr**2)
-                if pwr < self.pwr_threshold:
-                    no_audio_counter += 1
+        try:
+            while rclpy.ok():
+                stream = audio.open(
+                    format=FORMAT,
+                    channels=CHANNELS,
+                    rate=RATE,
+                    input=True,
+                    frames_per_buffer=CHUNK,
+                )
+                memoria = deque(maxlen=previos)
+                self.get_logger().info(
+                    "LISTO PARA ESCUCHAR. Di una frase."
+                )
+
+                while rclpy.ok():
+                    data = stream.read(
+                        CHUNK, exception_on_overflow=False
+                    )
+                    rclpy.spin_once(self, timeout_sec=0)
+                    if self.robot_hablando:
+                        memoria.clear()
+                        continue
+                    memoria.append(data)
+                    if self.potencia(data) >= self.pwr_threshold:
+                        break
+
+                if not rclpy.ok():
+                    break
+
+                frames = list(memoria)
+                interrumpida = False
+                silencios = 0
+                self.get_logger().info("Grabando tu frase...")
+
+                while rclpy.ok() and len(frames) < limite:
+                    data = stream.read(
+                        CHUNK, exception_on_overflow=False
+                    )
+                    rclpy.spin_once(self, timeout_sec=0)
+                    if self.robot_hablando:
+                        interrumpida = True
+                        break
+                    frames.append(data)
+                    if self.potencia(data) < self.pwr_threshold:
+                        silencios += 1
+                    else:
+                        silencios = 0
+                    if silencios >= silencio_final:
+                        break
+
+                # Cerrar la entrada evita acumular audio antiguo
+                # mientras Whisper está procesando.
+                stream.stop_stream()
+                stream.close()
+                stream = None
+
+                if interrumpida:
+                    continue
+
+                with wave.open(WAVE_OUTPUT_FILENAME, "wb") as wav:
+                    wav.setnchannels(CHANNELS)
+                    wav.setsampwidth(audio.get_sample_size(FORMAT))
+                    wav.setframerate(RATE)
+                    wav.writeframes(b"".join(frames))
+
+                if len(frames) >= limite:
+                    self.get_logger().warning(
+                        "Grabación demasiado larga. "
+                        "No se enviará una orden incompleta."
+                    )
+                    continue
+
+                self.get_logger().info(
+                    "Grabación terminada. Procesando..."
+                )
+                segments, _ = model.transcribe(
+                    WAVE_OUTPUT_FILENAME,
+                    beam_size=5,
+                    language="es",
+                    condition_on_previous_text=False,
+                )
+                texto = " ".join(
+                    segmento.text.strip() for segmento in segments
+                ).strip()
+
+                rclpy.spin_once(self, timeout_sec=0)
+                if texto and not self.robot_hablando:
+                    self.get_logger().info("RECONOCIDO: " + texto)
+                    self.pub_recognized.publish(String(data=texto))
                 else:
-                    no_audio_counter = 0
-            self.get_logger().info("Stopping audio recording.")
-
-            wf = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
-            wf.setnchannels(CHANNELS)
-            wf.setsampwidth(p.get_sample_size(FORMAT))
-            wf.setframerate(RATE)
-            wf.writeframes(b''.join(frames))
-            wf.close()
-
-            segments, info = model.transcribe(WAVE_OUTPUT_FILENAME, beam_size=5, language="es")
-            self.get_logger().info("Detected language '%s' with probability %f" % (info.language, info.language_probability))
-            for segment in segments:
-                self.get_logger().info("[%.2fs -> %.2fs] %s" % (segment.start, segment.end, segment.text))
-                self.pub_recognized.publish(String(data=segment.text))
-                break
-                    
-            rclpy.spin_once(self, timeout_sec=0)
-            self.get_clock().sleep_for(Duration(seconds=0.005))
-            
-        stream.stop_stream()
-        stream.close()
-        p.terminate()
+                    self.get_logger().info(
+                        "No se reconocieron palabras."
+                    )
+                rclpy.spin_once(self, timeout_sec=0)
+        finally:
+            if stream is not None:
+                stream.stop_stream()
+                stream.close()
+            audio.terminate()
 
 
 def main(args=None):
     rclpy.init(args=args)
-    faster_whisper_node = FasterWhisperNode()
-    faster_whisper_node.spin()
-    faster_whisper_node.destroy_node()
-    rclpy.shutdown()
+    nodo = FasterWhisperNode()
+    try:
+        nodo.spin()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        nodo.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
 
-    
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

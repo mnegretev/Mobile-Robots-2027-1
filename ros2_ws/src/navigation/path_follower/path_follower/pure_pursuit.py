@@ -22,6 +22,7 @@ from tf2_ros.transform_listener import TransformListener
 from ament_index_python.packages import get_package_share_directory
 from datetime import datetime
 import math
+import time
 import numpy
 
 NAME = "Martinez Cruz Lizeth"
@@ -103,8 +104,8 @@ class PurePursuitNode(Node):
         msg.linear.x = v
         msg.angular.z = w
         self.pub_cmd_vel.publish(msg)
-        rclpy.spin_once(self)
-        self.get_clock().sleep_for(Duration(seconds=0.005))
+        rclpy.spin_once(self, timeout_sec=0.01)
+        time.sleep(0.005)
 
     def get_robot_pose(self):
         try:
@@ -173,9 +174,10 @@ class PurePursuitNode(Node):
                 t = self.tf_buffer.lookup_transform("map","base_link", rclpy.time.Time())
                 robot_pose_tf_ready = True
             except TransformException as ex:
+                self.get_logger().warning(str(ex), throttle_duration_sec=5.0)
                 robot_pose_tf_ready = False
-            rclpy.spin_once(self)
-            self.get_clock().sleep_for(Duration(seconds=0.02))
+            rclpy.spin_once(self, timeout_sec=0.01)
+            time.sleep(0.02)
         self.get_logger().info("Robot pose tf is now available")
 
         state = SM_INIT
@@ -248,8 +250,8 @@ class PurePursuitNode(Node):
                 f.close()
                 state = SM_INIT
                 
-            rclpy.spin_once(self)
-            self.get_clock().sleep_for(Duration(seconds=0.005))
+            rclpy.spin_once(self, timeout_sec=0.01)
+            time.sleep(0.005)
 
 
 def main(args=None):

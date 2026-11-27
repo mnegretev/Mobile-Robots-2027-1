@@ -69,7 +69,7 @@ class CostMapNode(Node):
         for i in range(height):
             for j in range(width):
                 if static_map[i,j] == 100:
-                   if static_map[i+1,j] == 100 and static_map[i-1,j] == 100 and static_map[i,j+1] == 100 and static_map[i,j-1] == 100:
+                   if 0 < i < height-1 and 0 < j < width-1 and static_map[i+1,j] == 100 and static_map[i-1,j] == 100 and static_map[i,j+1] == 100 and static_map[i,j-1] == 100:
                       continue
                    for k1 in range(-cost_radius, cost_radius+1):
                        for k2 in range(-cost_radius, cost_radius+1):
