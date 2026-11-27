@@ -67,7 +67,7 @@ def generate_launch_description():
         executable="cost_map",
         name='cost_map',
         output='screen',
-        parameters=[{'inflation_radius':0.2}, {'cost_radius':0.5}]
+        parameters=[{'inflation_radius':0.3}, {'cost_radius':0.5}]
     )
     a_star_node = Node(
         package="path_planner",
