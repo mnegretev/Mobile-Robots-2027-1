@@ -1,8 +1,3 @@
-#
-# MOBILE ROBOTS - FI-UNAM, 2027-1
-# Text-to-Speech Node using Piper-TTS with Asynchronous Playback Queue
-#
-
 import os
 import queue
 import re
