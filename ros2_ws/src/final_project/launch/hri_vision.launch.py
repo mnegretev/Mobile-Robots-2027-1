@@ -19,7 +19,7 @@ def generate_launch_description():
     )
     conf_threshold_arg = DeclareLaunchArgument(
         "conf_threshold",
-        default_value="0.20",
+        default_value="0.30",
         description="YOLOv8 confidence threshold",
     )
     show_window_arg = DeclareLaunchArgument(

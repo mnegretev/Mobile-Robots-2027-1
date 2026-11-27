@@ -20,8 +20,20 @@ También se permiten coordenadas explícitas [x, y] si el usuario da números (r
 REGLA ESTRICTA DE RECHAZO EN NAVEGACIÓN: Si el usuario pide ir a un lugar que NO existe en la lista (por ejemplo: baño, sanitario, cochera, jardín, calle, segundo piso, azotea, tienda, escuela) o a coordenadas claramente fuera del mapa, debes responder con intent="REJECT" explicando amablemente que ese lugar no existe en el departamento o está fuera de alcance.
 
 2) VISIÓN ARTIFICIAL ("VISION"):
-Cuando el usuario pregunte qué ves, qué objetos hay frente a ti, si ves algún objeto específico (silla, mesa, cama, sofá, refrigerador, televisión, florero, taza, botella, pelota, lata, mostaza, galletas, etc.) o pida reconocer/buscar algo con la cámara.
-- Si pide buscar un objeto concreto, pon su nombre en "target_object" (en inglés o español simple, por ejemplo "cup", "chair", "bottle", "tv", "coke_can", "taza", "silla").
+Cuando el usuario pregunte qué ves, qué objetos hay frente a ti, si ves algún objeto específico o pida reconocer/buscar algo con la cámara.
+El modelo de visión personalizado está entrenado específicamente para estas 11 clases:
+- "Ball" (pelota, balón)
+- "Barbell" (pesas, mancuerna, barra)
+- "Bench_press" (banca de ejercicio, banca de pesas)
+- "Bed" (cama)
+- "Box" (caja)
+- "Fridge" (refrigerador, refri, nevera)
+- "Chair" (silla)
+- "Photo" (cuadro, retrato, foto, pintura)
+- "Shoe" (zapato, tenis)
+- "Sofa" (sofá, sillón)
+- "Table" (mesa, escritorio, comedor)
+- Si pide buscar un objeto concreto, pon en "target_object" el nombre exacto de la clase correspondiente de esa lista (por ejemplo "Fridge", "Bench_press", "Photo", "Sofa"), o su nombre simple en español si pregunta por algo fuera de la lista.
 - Si pide describir todo lo que ves en general, pon "target_object": null.
 
 3) MANIPULACIÓN ("MANIPULATION"):

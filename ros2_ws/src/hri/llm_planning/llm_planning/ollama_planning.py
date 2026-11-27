@@ -94,6 +94,20 @@ ARM_POSES = {
     "look_right": [-1.05, -0.35, -0.65, 0.0, -0.35, 0.0],
 }
 
+OBJECT_SYNONYMS = {
+    "ball": {"ball", "pelota", "balon", "balón", "esfera"},
+    "barbell": {"barbell", "pesas", "pesa", "mancuerna", "mancuernas", "barra"},
+    "bench_press": {"bench_press", "bench press", "banca", "banca de ejercicio", "banca de pesas"},
+    "bed": {"bed", "cama", "colchon", "colchón"},
+    "box": {"box", "caja", "empaque", "paquete"},
+    "fridge": {"fridge", "refrigerator", "refrigerador", "refri", "nevera"},
+    "chair": {"chair", "silla", "asiento"},
+    "photo": {"photo", "portrait", "cuadro", "retrato", "foto", "fotografia", "fotografía", "pintura"},
+    "shoe": {"shoe", "zapato", "zapatos", "tenis", "calzado"},
+    "sofa": {"sofa", "couch", "sofá", "sillon", "sillón"},
+    "table": {"table", "mesa", "comedor", "escritorio"},
+}
+
 MAP_BOUNDS = (-9.3, 9.3, -5.4, 5.5)
 
 
@@ -412,13 +426,19 @@ class OllamaPlanningNode(Node):
 
         if isinstance(target, str) and target.strip() and target.strip().lower() not in ("all", "any", "todos"):
             t_low = target.strip().lower()
+            syn_group = {t_low}
+            for base_cls, words in OBJECT_SYNONYMS.items():
+                if t_low in words or base_cls in t_low:
+                    syn_group.update(words)
+                    syn_group.add(base_cls)
+
             matched = [
                 o
                 for o in objs
-                if t_low in o.id.lower()
-                or t_low in o.category.lower()
-                or o.id.lower() in t_low
-                or o.category.lower() in t_low
+                if any(
+                    w in o.id.lower() or w in o.category.lower() or o.id.lower() in w or o.category.lower() in w
+                    for w in syn_group
+                )
             ]
             if matched:
                 best = max(matched, key=lambda o: o.confidence)
@@ -426,8 +446,9 @@ class OllamaPlanningNode(Node):
                     best.pose.position.x ** 2 + best.pose.position.y ** 2 + best.pose.position.z ** 2
                 )
                 dist_txt = f" a unos {dist:.1f} metros" if dist > 0.05 else ""
-                count_txt = f"{len(matched)} " if len(matched) > 1 else "un "
-                return f"Sí, veo {count_txt}{best.category}{dist_txt}."
+                if len(matched) > 1:
+                    return f"Sí, detecto {len(matched)} {best.category}{dist_txt}."
+                return f"Sí, detecto {best.category}{dist_txt}."
 
             seen_cats = sorted({o.category or o.id for o in objs})
             return (

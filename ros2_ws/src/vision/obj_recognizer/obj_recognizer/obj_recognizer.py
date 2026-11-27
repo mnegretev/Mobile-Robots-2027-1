@@ -1,6 +1,6 @@
 #
 # MOBILE ROBOTS - FI-UNAM, 2027-1
-# Object Recognition Node using YOLOv8, CvBridge, and RGB-D PointCloud2
+# Object Recognition Node using YOLOv8
 #
 
 import os
@@ -21,12 +21,21 @@ from ultralytics import YOLO
 
 NAME = "Medrano Solano Enrique / Orihuela Castillo Luis"
 
-# Bidirectional alias map (Spanish <-> English / simulation custom class names)
+# Bidirectional alias map
 CLASS_ALIASES = {
-    "person": ["person", "persona", "humano", "gente"],
+    "ball": ["ball", "sports ball", "pelota", "balon", "balón", "esfera"],
+    "barbell": ["barbell", "dumbbell", "barra de pesas", "pesas", "pesa", "mancuerna", "mancuernas"],
+    "bench_press": ["bench_press", "bench press", "banca", "banca de ejercicio", "banca de pesas", "aparato de ejercicio", "gimnasio"],
+    "bed": ["bed", "cama", "colchon", "colchón"],
+    "box": ["box", "caja", "empaque", "paquete", "carton", "cartón"],
+    "fridge": ["fridge", "refrigerator", "refrigerador", "refri", "nevera"],
     "chair": ["chair", "silla", "asiento"],
+    "photo": ["photo", "portrait", "cuadro", "retrato", "foto", "fotografia", "fotografía", "pintura"],
+    "shoe": ["shoe", "tennis_shoe", "zapato", "zapatos", "tenis", "calzado"],
+    "sofa": ["sofa", "couch", "sofá", "sillon", "sillón"],
+    "table": ["table", "dining table", "mesa", "comedor", "escritorio"],
+    "person": ["person", "persona", "humano", "gente"],
     "couch": ["couch", "sofa", "sofá", "sillon", "sillón"],
-    "bed": ["bed", "cama"],
     "dining table": ["dining table", "table", "mesa", "comedor"],
     "tv": ["tv", "television", "televisión", "tele", "pantalla", "monitor"],
     "refrigerator": ["refrigerator", "fridge", "refrigerador", "refri", "nevera"],
@@ -40,7 +49,6 @@ CLASS_ALIASES = {
     "laptop": ["laptop", "computadora", "portatil", "portátil"],
     "clock": ["clock", "reloj"],
     "backpack": ["backpack", "mochila"],
-    "shoe": ["shoe", "tennis_shoe", "zapato", "tenis", "calzado"],
     "coke_can": ["coke_can", "coca", "lata", "refresco", "coke"],
     "coke_green": ["coke_green", "lata verde", "refresco verde"],
     "coffe_mug": ["coffe_mug", "coffee_mug", "taza", "taza de cafe", "taza de café"],
@@ -59,10 +67,19 @@ CLASS_ALIASES = {
 }
 
 EN_TO_ES = {
-    "person": "persona",
-    "chair": "silla",
-    "couch": "sofá",
+    "ball": "pelota",
+    "barbell": "pesas",
+    "bench_press": "banca de ejercicio",
     "bed": "cama",
+    "box": "caja",
+    "fridge": "refrigerador",
+    "chair": "silla",
+    "photo": "cuadro",
+    "shoe": "zapato",
+    "sofa": "sofá",
+    "table": "mesa",
+    "person": "persona",
+    "couch": "sofá",
     "dining table": "mesa",
     "tv": "televisión",
     "refrigerator": "refrigerador",
@@ -76,7 +93,6 @@ EN_TO_ES = {
     "laptop": "computadora",
     "clock": "reloj",
     "backpack": "mochila",
-    "shoe": "zapato",
     "coke_can": "lata de refresco",
     "coke_green": "lata verde",
     "coffe_mug": "taza",
@@ -207,7 +223,7 @@ class ObjRecognizerNode(Node):
         self.get_logger().info("INITIALIZING OBJECT RECOGNIZER WITH YOLO - " + NAME)
 
         self.declare_parameter("model_path", "")
-        self.declare_parameter("conf_threshold", 0.20)
+        self.declare_parameter("conf_threshold", 0.30)
         self.declare_parameter("image_topic", "/camera/color/image_raw")
         self.declare_parameter("cloud_topic", "/camera/depth/points")
         self.declare_parameter("annotated_topic", "/vision/image_annotated")
@@ -226,6 +242,7 @@ class ObjRecognizerNode(Node):
         self.latest_cloud_msg = None
 
         model_path = self._resolve_model_path(param_model_path)
+        self.model_path = model_path
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.get_logger().info(f"Loading YOLO model from '{model_path}' on device '{self.device}'...")
         self.model = YOLO(model_path)
@@ -387,7 +404,7 @@ class ObjRecognizerNode(Node):
                     2,
                 )
 
-        hud_text = f"YOLOv8 ({self.device}) | Objetos: {len(vision_objs)}"
+        hud_text = f"YOLO ({os.path.basename(self.model_path)}) | Objetos: {len(vision_objs)}"
         cv2.putText(
             annotated,
             hud_text,
