@@ -62,6 +62,36 @@ Las respuestas habladas deben tener como máximo veinte palabras.
 """
 
 
+def _normalizar_orden_robot(texto):
+    import unicodedata
+    texto = unicodedata.normalize("NFKD", texto.lower())
+    texto = "".join(c for c in texto if not unicodedata.combining(c))
+    return " ".join("".join(c if c.isalnum() else " " for c in texto).split())
+
+
+def _resolver_navegacion_robot(texto):
+    texto = _normalizar_orden_robot(texto)
+    for _ in range(3):
+        for prefijo in ("por favor ", "robot "):
+            if texto.startswith(prefijo):
+                texto = texto[len(prefijo):]
+    palabras = texto.split()
+    if "brazo" in palabras:
+        return None
+    prefijos = ("ve ", "vete ", "voy ", "vaya ", "vayas ", "ir ",
+                "dirigete ", "regresa ", "regresar ", "vuelve ",
+                "volver ", "retorna ", "llevame ", "vamos ",
+                "quiero ir ", "quiero que vayas ", "puedes ir ",
+                "podrias ir ")
+    if not texto.startswith(prefijos):
+        return None
+    encontrados = [d for d in DESTINOS
+                   if " " + _normalizar_orden_robot(d) + " " in " " + texto + " "]
+    if "no" in palabras or len(encontrados) != 1:
+        return {"accion": "responder", "texto": "Dime un solo destino configurado, por ejemplo: ve a la cocina."}
+    return {"accion": "navegar", "destino": encontrados[0]}
+
+
 class OllamaPlanningNode(Node):
     def __init__(self):
         super().__init__("ollama_planning_node")
@@ -143,6 +173,11 @@ class OllamaPlanningNode(Node):
 
     def consultar_ollama(self, texto):
         try:
+            directa = _resolver_navegacion_robot(texto)
+            if directa is not None:
+                self.get_logger().info("Orden de navegacion resuelta directamente.")
+                self.resultados.put((directa, None))
+                return
             mensajes = [
                 {"role": "system", "content": INSTRUCCIONES}
             ] + self.historial[-8:] + [
@@ -164,6 +199,12 @@ class OllamaPlanningNode(Node):
             orden = json.loads(contenido)
             if not isinstance(orden, dict):
                 raise ValueError("Se esperaba un objeto JSON")
+            palabras = _normalizar_orden_robot(texto).split()
+            verbos = {"mueve", "mover", "pon", "poner", "coloca", "colocar", "posiciona", "lleva", "cambia"}
+            if orden.get("accion") == "brazo" and not (
+                "brazo" in palabras and verbos.intersection(palabras)
+            ):
+                orden = {"accion": "responder", "texto": "Para mover el brazo, pidemelo explicitamente."}
             if orden.get("accion") == "navegar":
                 destino = orden.get("destino")
                 reconocido = texto.lower()
