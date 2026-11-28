@@ -13,7 +13,7 @@ from manip_msgs.srv import *
 import numpy
 import math
 
-NAME = "FULL NAME"
+NAME = "PEREZ CORTES NATHAN"
 
 H0 = [[1.0, 0.0, 0.0, 0.000], # link1 to link_base, joint rotates on Z
       [0.0, 1.0, 0.0, 0.000],
@@ -87,7 +87,17 @@ class IKNewtonRaphsonNode(Node):
         #     Get RPY from the resulting H
         #     Get xyz from the resulting H
         #
-        
+        for i in range(6):
+            c = numpy.cos(Q[i])
+            s = numpy.sin(Q[i])
+            Rz = numpy.asarray([[c,  -s,  0.0, 0.0],
+                                [s,   c,  0.0, 0.0],
+                                [0.0, 0.0, 1.0, 0.0],
+                                [0.0, 0.0, 0.0, 1.0]])
+            H = H @ Hs[i] @ Rz
+        H = H @ Hs[6]
+        R, P, Y = self.matrix_to_euler_xyz(H[0:3, 0:3])
+
         return numpy.asarray([H[0,3], H[1,3], H[2,3], R, P, Y])
 
     def jacobian(self, Q):
@@ -112,12 +122,38 @@ class IKNewtonRaphsonNode(Node):
         #           i-th column of J = ( FK(i-th row of q_next) - FK(i-th row of q_prev) ) / (2*delta_q)
         #     RETURN J
         #
-        
+        Q = numpy.asarray(Q, dtype=float)
+        for i in range(len(Q)):
+            q_next = Q.copy()
+            q_prev = Q.copy()
+            q_next[i] = q_next[i] + delta_q
+            q_prev[i] = q_prev[i] - delta_q
+            diff = self.forward_kinematics(q_next) - self.forward_kinematics(q_prev)
+            # The orientation difference must also be kept in (-pi, pi]
+            for k in range(3, 6):
+                diff[k] = self.wrap_angle(diff[k])
+            J[:, i] = diff / (2.0 * delta_q)
+
         return J
         
-    def inverse_kinematics(self, Xd, init_guess=numpy.zeros(7), max_iter=2000):
-        Xd= numpy.asarray(Xd)
-        Q = init_guess
+    def wrap_angle(self, a):
+        # Returns the angle a in [-pi, pi)
+        return (a + numpy.pi) % (2.0 * numpy.pi) - numpy.pi
+
+    def pose_error(self, X, Xd):
+        error = X - Xd
+        for k in range(3, 6):
+            error[k] = self.wrap_angle(error[k])
+        return error
+
+    def inverse_kinematics(self, Xd, init_guess=numpy.zeros(6), max_iter=2000):
+        Xd = numpy.asarray(Xd, dtype=float)
+        # The arm has 6 joints. The guess is cut or padded with zeros to have exactly 6 values
+        Q = numpy.zeros(6)
+        guess = numpy.asarray(init_guess, dtype=float).flatten()
+        n = min(len(guess), 6)
+        Q[0:n] = guess[0:n]
+        TOL = 1e-6
         iterations = 0
         success = False
         #
@@ -140,7 +176,21 @@ class IKNewtonRaphsonNode(Node):
         #    Set success if maximum iterations were not exceeded
         #    Return success and calculated Q
         #
-        
+        X = self.forward_kinematics(Q)
+        error = self.pose_error(X, Xd)
+        while numpy.linalg.norm(error) > TOL and iterations < max_iter:
+            J = self.jacobian(Q)
+            Q = Q - numpy.linalg.pinv(J) @ error
+            for i in range(len(Q)):
+                Q[i] = self.wrap_angle(Q[i])
+            X = self.forward_kinematics(Q)
+            error = self.pose_error(X, Xd)
+            iterations += 1
+        if numpy.linalg.norm(error) <= TOL:
+            success = True
+        else:
+            success = False
+
         if success:
             self.get_logger().info("IK solved after " + str(iterations) + " steps. Q=" + str(Q))
         else:
@@ -152,7 +202,10 @@ class IKNewtonRaphsonNode(Node):
         Xd = [req.x, req.y, req.z, req.roll, req.pitch, req.yaw]
         self.get_logger().info("Calculating IK for " +  str(Xd) + "with max " + str(N) + " iterations and Qo=" + str(req.initial_guess))
         success, Q = self.inverse_kinematics(Xd, req.initial_guess, N)
-        resp.q = Q if success else []
+        if success:
+            resp.q = [float(q) for q in Q]
+        else:
+            resp.q = []
         return resp
 
     def callback_forward_kinematics(self, req, resp):

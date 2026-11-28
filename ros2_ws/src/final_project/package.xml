@@ -14,6 +14,15 @@
   <depend>navig_msgs</depend>
   <depend>manip_msgs</depend>
   <depend>pumas_vision_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>trajectory_msgs</depend>
+  <depend>tf2_ros</depend>
+  <exec_depend>python3-yaml</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-opencv</exec_depend>
+  <exec_depend>python3-requests</exec_depend>
+  <exec_depend>speech2text</exec_depend>
+  <exec_depend>text2speech</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

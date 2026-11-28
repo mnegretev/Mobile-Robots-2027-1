@@ -1,0 +1,132 @@
+# Conocimiento del robot para el proyecto final.
+# Puedes editar este archivo sin tocar el código (recompila con colcon build).
+#
+# locations: lugares a los que el robot puede navegar (frame 'map').
+#   x, y en metros, yaw en radianes (orientación final del robot).
+#   aliases: palabras (sin acentos, minúsculas) con las que se reconoce el lugar.
+# objects: objetos que el robot conoce.
+#   location: lugar donde normalmente se encuentra.
+#   colors: colores para el detector por color (rojo, verde, amarillo, azul, naranja).
+#   yolo: clases de YOLO (COCO) que también cuentan como ese objeto.
+# arm_poses: posiciones articulares del xArm6 [joint1..joint6] en radianes.
+
+robot_name: "Lira"
+
+locations:
+  inicio:
+    say: "el punto de inicio"
+    x: 0.0
+    y: 0.0
+    yaw: 0.0
+    aliases: ["inicio", "origen", "base", "punto de partida", "entrada"]
+  cocina:
+    say: "la cocina"
+    x: 5.2
+    y: 0.9
+    yaw: 0.0
+    aliases: ["cocina", "mesa de la cocina", "comedor"]
+  refrigerador:
+    say: "el refrigerador"
+    x: 7.7
+    y: -1.0
+    yaw: 0.0
+    aliases: ["refrigerador", "refri", "nevera", "refrigeradora"]
+  sala:
+    say: "la sala"
+    x: 1.5
+    y: -0.7
+    yaw: -1.5708
+    aliases: ["sala", "sillon", "sofa", "mesa de centro", "mesita de centro"]
+  television:
+    say: "la televisión"
+    x: 0.6
+    y: -4.0
+    yaw: -1.5708
+    aliases: ["television", "tele", "tv", "mueble de la tele"]
+  estante:
+    say: "el estante"
+    x: 4.5
+    y: -4.3
+    yaw: -1.5708
+    aliases: ["estante", "repisa", "librero", "anaquel"]
+  recamara:
+    say: "la recámara"
+    x: -5.0
+    y: 0.5
+    yaw: 1.5708
+    aliases: ["recamara", "cuarto", "habitacion", "dormitorio", "cama"]
+  escritorio:
+    say: "el escritorio"
+    x: -8.0
+    y: 1.0
+    yaw: 2.3
+    aliases: ["escritorio", "estudio", "oficina"]
+  pasillo:
+    say: "el pasillo"
+    x: -0.55
+    y: 3.2
+    yaw: 1.5708
+    aliases: ["pasillo", "corredor"]
+
+objects:
+  mostaza:
+    say: "la mostaza"
+    location: cocina
+    colors: ["amarillo"]
+    yolo: ["bottle"]
+    aliases: ["mostaza", "botella amarilla"]
+  galletas:
+    say: "la caja de galletas"
+    location: cocina
+    colors: ["rojo", "naranja"]
+    yolo: []
+    aliases: ["galletas", "caja de galletas", "cheez it", "cheezit", "caja roja", "caja"]
+  lata:
+    say: "la lata de refresco"
+    location: estante
+    colors: ["rojo"]
+    yolo: ["bottle", "cup"]
+    aliases: ["lata", "refresco", "coca", "coca cola", "lata roja"]
+  lata_verde:
+    say: "la lata verde"
+    location: estante
+    colors: ["verde"]
+    yolo: ["bottle", "cup"]
+    aliases: ["lata verde", "refresco verde"]
+  taza:
+    say: "la taza"
+    location: estante
+    colors: []
+    yolo: ["cup"]
+    aliases: ["taza", "taza de cafe", "tarro"]
+  leche:
+    say: "el vaso de leche"
+    location: pasillo
+    colors: []
+    yolo: ["cup"]
+    aliases: ["leche", "vaso de leche", "vaso"]
+  chocolate:
+    say: "el chocolate en polvo"
+    location: television
+    colors: ["amarillo"]
+    yolo: ["bottle"]
+    aliases: ["chocolate", "nesquik", "chocolate en polvo"]
+
+# Ajusta estas posiciones con la GUI (lira_gui) si el brazo choca o no se ve bien.
+arm_poses:
+  home:      [0.0,  0.0,  0.0,  0.0,  0.0,  0.0]
+  levantar:  [0.0, -0.3, -1.2,  0.0,  0.0,  0.0]
+  estirar:   [0.0,  0.8, -0.8,  0.0,  0.0,  0.0]
+  mirar:     [0.0,  0.3, -0.9,  0.0, -0.4,  0.0]
+  pre_tomar: [0.0,  0.7, -1.0,  0.0,  0.3,  0.0]
+  tomar:     [0.0,  0.9, -0.9,  0.0,  0.0,  0.0]
+  cargar:    [0.0,  0.0, -1.0,  0.0,  1.0,  0.0]
+  saludo_a:  [0.0, -0.3, -1.6,  0.0,  0.6,  0.0]
+  saludo_b:  [0.0, -0.3, -1.6,  0.0, -0.6,  0.0]
+
+# Pinza (opcional). Si el controlador no existe, el robot lo dirá.
+gripper:
+  topic: "/xarm_gripper_traj_controller/joint_trajectory"
+  joint: "drive_joint"
+  open: 0.0
+  closed: 0.85

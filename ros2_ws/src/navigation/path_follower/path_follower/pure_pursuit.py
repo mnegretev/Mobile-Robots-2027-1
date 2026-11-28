@@ -62,7 +62,7 @@ class PurePursuitNode(Node):
         idx = 0
         Pg = path[idx]
         Pr, theta_r = self.get_robot_pose()
-        while numpy.linalg.norm(path[-1] - Pr) > tol_d  and rclpy.ok():
+        while numpy.linalg.norm(path[-1] - Pr) > tol_d  and rclpy.ok() and not self.stop_requested:
             v,w = self.calculate_control(Pr[0], Pr[1], theta_r, Pg[0], Pg[1], alpha, beta, v_max, w_max)
             self.publish_and_save_data(Pr[0], Pr[1], theta_r, v,w)
             Pr, theta_r = self.get_robot_pose()
@@ -70,7 +70,7 @@ class PurePursuitNode(Node):
                 idx = min(idx+1, len(path)-1)
                 Pg = path[idx]
                 
-        while abs(final_angle - theta_r) > tol_a and rclpy.ok():
+        while abs(final_angle - theta_r) > tol_a and rclpy.ok() and not self.stop_requested:
             error_a = (final_angle - theta_r + math.pi)%(2*math.pi) - math.pi
             w = w_max*(2/(1 + math.exp(-(error_a)/beta)) - 1)
             self.publish_and_save_data(Pr[0], Pr[1], theta_r, 0.0,w)
@@ -110,8 +110,14 @@ class PurePursuitNode(Node):
         self.get_logger().info("Received new goal pose: " + str(self.goal_pose))
         self.new_goal_pose = True
 
+    def callback_stop(self, msg):
+        if msg.data:
+            self.get_logger().info("Stop requested")
+            self.stop_requested = True
+
     def __init__(self):
         super().__init__("pure_pursuit_node")
+        self.stop_requested = False
         self.get_logger().info("INITIALIZING PATH FOLLOWER BY PURE PURSUIT NODE ...")
         self.nav_data = []
         self.data_folder = get_package_share_directory('path_follower') + "/" 
@@ -134,6 +140,7 @@ class PurePursuitNode(Node):
         self.pub_cmd_vel = self.create_publisher(Twist, '/cmd_vel', 1)
         self.pub_goal_reached = self.create_publisher(Bool, '/navigation/goal_reached', 1)
         self.sub_goal_pose = self.create_subscription(PoseStamped, '/goal_pose', self.callback_goal_pose, 1)
+        self.sub_stop = self.create_subscription(Bool, '/navigation/stop', self.callback_stop, 1)
 
     def spin(self):
         robot_pose_tf_ready = False
@@ -171,6 +178,7 @@ class PurePursuitNode(Node):
             elif state == SM_WAIT_FOR_NEW_GOAL:
                 if self.new_goal_pose:
                     self.new_goal_pose = False
+                    self.stop_requested = False
                     state = SM_PLAN_PATH
 
             elif state == SM_PLAN_PATH:
@@ -207,11 +215,22 @@ class PurePursuitNode(Node):
                 tol_a = self.get_parameter('tol_angle').get_parameter_value().double_value
                 self.get_logger().info("Following path with [v_max, w_max, alpha, beta, tol_d, tol_a]="+str([v_max, w_max, alpha, beta, tol_d, tol_a]))
                 path_points = [numpy.asarray([p.pose.position.x, p.pose.position.y]) for p in path.poses]
-                self.pure_pursuit(path_points, self.goal_angle, alpha, beta, v_max, w_max, tol_d, tol_a)
-                self.pub_cmd_vel.publish(Twist())
-                self.pub_goal_reached.publish(Bool(data=True))
-                self.get_logger().info("Global goal point reached")
-                state = SM_SAVE_DATA
+                if len(path_points) == 0:
+                    self.get_logger().info("Empty path. Cannot follow it.")
+                    self.pub_cmd_vel.publish(Twist())
+                    self.pub_goal_reached.publish(Bool(data=False))
+                    state = SM_INIT
+                else:
+                    self.pure_pursuit(path_points, self.goal_angle, alpha, beta, v_max, w_max, tol_d, tol_a)
+                    self.pub_cmd_vel.publish(Twist())
+                    if self.stop_requested:
+                        self.get_logger().info("Path following stopped by user")
+                        self.stop_requested = False
+                        state = SM_INIT
+                    else:
+                        self.pub_goal_reached.publish(Bool(data=True))
+                        self.get_logger().info("Global goal point reached")
+                        state = SM_SAVE_DATA
 
             elif state == SM_SAVE_DATA:
                 self.data_folder = self.get_parameter('folder').get_parameter_value().string_value

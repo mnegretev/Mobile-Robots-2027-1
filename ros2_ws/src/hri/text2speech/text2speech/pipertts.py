@@ -1,6 +1,6 @@
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 from ament_index_python.packages import get_package_share_directory
 import os
 import wave
@@ -32,6 +32,8 @@ class TTSSubscriber(Node):
             self.listener_callback,
             10)
         self.subscription  # prevent unused variable warning
+        # Avisa cuando el robot está hablando, para que speech2text no se escuche a sí mismo
+        self.pub_speaking = self.create_publisher(Bool, '/tts_speaking', 10)
 
     def generate_speech(self,txt):
         # Generate speech with specific instructions
@@ -40,8 +42,12 @@ class TTSSubscriber(Node):
 
     def listener_callback(self, msg):
         self.get_logger().info('Processing txt: "%s"' % msg.data)
-        self.generate_speech(msg.data)
-        os.system(AUDIO_BASH)
+        self.pub_speaking.publish(Bool(data=True))
+        try:
+            self.generate_speech(msg.data)
+            os.system(AUDIO_BASH)
+        finally:
+            self.pub_speaking.publish(Bool(data=False))
 
 
 def main(args=None):
